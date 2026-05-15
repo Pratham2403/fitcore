@@ -24,7 +24,7 @@ export default function BottomSheet({ open, onClose, children, title }: Props) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end">
+    <div className="fixed inset-0 z-50 flex flex-col justify-end mb-8">
       {/* Backdrop */}
       <div
         ref={overlayRef}
