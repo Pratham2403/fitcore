@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #0F0F0F;
+  --bg-surface: #1A1A1A;
+  --bg-elevated: #242424;
+  --border: #333333;
+  --border-subtle: #2A2A2A;
+  --text-primary: #F5F5F5;
+  --text-secondary: #A3A3A3;
+  --text-tertiary: #6B6B6B;
+  --accent-emerald: #10B981;
+  --accent-blue: #3B82F6;
+  --accent-orange: #F59E0B;
+  --accent-green: #22C55E;
+  --destructive: #EF4444;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  background: var(--bg-primary);
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* mobile-first: prevent horizontal scroll */
+  overflow-x: hidden;
+  /* safe area for notch phones */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Remove default input/button appearance */
+input,
+button {
+  outline: none;
+  border: none;
+  background: none;
+}
+
+/* Numeric inputs — show number keyboard on mobile */
+input[inputmode="numeric"],
+input[inputmode="decimal"] {
+  -moz-appearance: textfield;
+}
+input[inputmode="numeric"]::-webkit-inner-spin-button,
+input[inputmode="decimal"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .font-mono-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
