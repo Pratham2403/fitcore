@@ -29,6 +29,26 @@ export default function StretchSection({ exercises, onComplete }: Props) {
     }
   )
 
+  function goNext() {
+    if (currentIdx < exercises.length - 1) {
+      pause()
+      const nextIdx = currentIdx + 1
+      setCurrentIdx(nextIdx)
+      reset(exercises[nextIdx]?.durationSecs ?? 30)
+    } else {
+      setDone(true)
+      onComplete()
+    }
+  }
+
+  function goBack() {
+    if (currentIdx <= 0) return
+    pause()
+    const prevIdx = currentIdx - 1
+    setCurrentIdx(prevIdx)
+    reset(exercises[prevIdx]?.durationSecs ?? 30)
+  }
+
   if (done) {
     return (
       <div className="rounded-2xl p-5 text-center" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
@@ -57,6 +77,16 @@ export default function StretchSection({ exercises, onComplete }: Props) {
         </div>
 
         <div className="flex gap-2 mt-4">
+          {/* Back button */}
+          {currentIdx > 0 && (
+            <button
+              onClick={goBack}
+              className="px-3 py-2 rounded-xl text-sm font-semibold"
+              style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
+            >
+              ← Back
+            </button>
+          )}
           <button
             onClick={isRunning ? pause : start}
             className="flex-1 py-2 rounded-xl text-sm font-semibold"
@@ -65,15 +95,7 @@ export default function StretchSection({ exercises, onComplete }: Props) {
             {isRunning ? 'Pause' : 'Start'}
           </button>
           <button
-            onClick={() => {
-              if (currentIdx < exercises.length - 1) {
-                setCurrentIdx(i => i + 1)
-                reset(exercises[currentIdx + 1]?.durationSecs ?? 30)
-              } else {
-                setDone(true)
-                onComplete()
-              }
-            }}
+            onClick={goNext}
             className="flex-1 py-2 rounded-xl text-sm font-semibold"
             style={{ background: 'var(--bg-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
           >

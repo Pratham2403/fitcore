@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import BottomSheet from '@/components/ui/BottomSheet'
 import TimerRing from '@/components/workout/TimerRing'
 import { useTimer } from '@/hooks/useTimer'
@@ -21,12 +21,18 @@ export default function RestTimer({ open, onClose, restSecs, nextExerciseName, o
     playChime()
     if (navigator.vibrate) navigator.vibrate([200, 100, 200])
     onComplete?.()
+    // Auto-close 1.5s after chime so next set log always re-opens fresh
+    setTimeout(() => onClose(), 1500)
   })
+
+  // startRef ensures the timeout always calls the latest start (never a stale closure)
+  const startRef = useRef(start)
+  startRef.current = start
 
   useEffect(() => {
     if (open) {
       reset(restSecs)
-      setTimeout(() => start(), 100)
+      setTimeout(() => startRef.current(), 100)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, restSecs])

@@ -88,17 +88,25 @@ export default function SetRow({
       />
       <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>kg</span>
 
-      {/* RPE */}
+      {/* RPE — shows emoji + label so user knows what they're selecting */}
       {!isLogged ? (
         <button
           onClick={() => setRpe(prev => (prev === 3 ? 1 : (prev + 1) as 1 | 2 | 3))}
-          className="text-lg leading-none"
-          title={RPE_LABELS[rpe].label}
+          className="flex flex-col items-center gap-0.5 flex-shrink-0"
+          title="Tap to change effort level"
         >
-          {RPE_LABELS[rpe].emoji}
+          <span className="text-base leading-none">{RPE_LABELS[rpe].emoji}</span>
+          <span className="text-[9px] leading-none" style={{ color: 'var(--text-tertiary)' }}>
+            {RPE_LABELS[rpe].label}
+          </span>
         </button>
       ) : (
-        <span className="text-lg leading-none">{RPE_LABELS[rpe].emoji}</span>
+        <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
+          <span className="text-base leading-none">{RPE_LABELS[rpe].emoji}</span>
+          <span className="text-[9px] leading-none" style={{ color: 'var(--text-tertiary)' }}>
+            {RPE_LABELS[rpe].label}
+          </span>
+        </div>
       )}
 
       {/* Log / PR */}

@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 const supabase = getSupabaseClient()
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState('prathamlightcode@gmail.com')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)

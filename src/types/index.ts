@@ -13,6 +13,8 @@ export interface Exercise {
   isUnilateral: boolean
   isMandatory: boolean    // kegels — cannot be skipped
   hasKneeWarning: boolean // leg extension permanent red warning
+  defaultWeightKg: number // sensible starting weight for a beginner (0 = bodyweight)
+  isAssistance?: boolean  // true for assisted pull-ups/chin-ups/dips — weight should trend DOWN
   notes: string
   alternatives: string[]
   muscleGroups: string[]
@@ -56,7 +58,8 @@ export interface WorkoutSession {
   readiness_protein?: number
   wellness_score?: number
   total_volume_kg?: number
-  notes?: string
+  post_mood_workout?: 1 | 2 | 3
+  post_mood_energy?: 1 | 2 | 3
   completed_at?: string
   created_at: string
 }
@@ -108,7 +111,6 @@ export interface BodyMetric {
   id: string
   date: string
   weight_kg: number
-  notes?: string
   created_at: string
 }
 
@@ -122,4 +124,21 @@ export interface ReadinessCheckIn {
 export interface Quote {
   text: string
   author: string
+}
+
+// Per-exercise last-session data passed from workout page to ExerciseCard
+export interface LastSessionData {
+  avgWeight: number
+  avgReps: number
+  perSetReps?: Array<{ setNum: number; reps: number }> // AMRAP exercises only
+}
+
+// Persisted draft for session continuation across app restarts
+export interface SessionDraft {
+  sessionId: string
+  dayType: DayType
+  phase: 'warmup' | 'workout' | 'stretch'
+  readiness: ReadinessCheckIn | null
+  startTime: number
+  savedAt: string // ISO date string
 }

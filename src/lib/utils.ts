@@ -50,6 +50,20 @@ export function getWeekStart(): string {
   return toISODate(monday)
 }
 
+export function getLastWeekStart(): string {
+  const now = new Date()
+  const monday = new Date(now)
+  monday.setDate(now.getDate() - ((now.getDay() + 6) % 7) - 7)
+  return toISODate(monday)
+}
+
+export function formatRestSecs(secs: number): string {
+  if (secs < 60) return `${secs}s`
+  const m = Math.floor(secs / 60)
+  const s = secs % 60
+  return s === 0 ? `${m}:00` : `${m}:${String(s).padStart(2, '0')}`
+}
+
 export function cn(...classes: (string | undefined | false | null)[]): string {
   return classes.filter(Boolean).join(' ')
 }

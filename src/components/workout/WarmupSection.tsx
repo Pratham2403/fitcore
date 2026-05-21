@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import TimerRing from '@/components/workout/TimerRing'
 import TransitionOverlay from '@/components/workout/TransitionOverlay'
 import { useTimer } from '@/hooks/useTimer'
@@ -36,6 +36,10 @@ export default function WarmupSection({ exercises, onComplete }: Props) {
     }
   )
 
+  // Always-current start reference so timeouts never call a stale closure
+  const startRef = useRef(start)
+  startRef.current = start
+
   useEffect(() => {
     reset(currentEx?.durationSecs ?? 30)
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -50,10 +54,18 @@ export default function WarmupSection({ exercises, onComplete }: Props) {
     }
   }
 
+  function goBack() {
+    if (currentIdx <= 0) return
+    setShowTransition(false)
+    pause()
+    setCurrentIdx(i => i - 1)
+    // reset will fire via the useEffect on currentIdx change
+  }
+
   function handleTransitionComplete() {
     setShowTransition(false)
     setCurrentIdx(i => i + 1)
-    setTimeout(() => start(), 100)
+    setTimeout(() => startRef.current(), 100)
   }
 
   if (done) {
@@ -90,12 +102,12 @@ export default function WarmupSection({ exercises, onComplete }: Props) {
       <div className="h-1 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
         <div
           className="h-full rounded-full transition-all duration-500"
-          style={{ background: 'var(--accent-emerald)', width: `${((currentIdx) / exercises.length) * 100}%` }}
+          style={{ background: 'var(--accent-emerald)', width: `${(currentIdx / exercises.length) * 100}%` }}
         />
       </div>
 
       {/* Current exercise card */}
-      <div className="rounded-2xl p-4" style={{ background: 'var(--bg-surface)', border: '1px solid var(--accent-blue)', borderColor: 'rgba(59,130,246,0.4)' }}>
+      <div className="rounded-2xl p-4" style={{ background: 'var(--bg-surface)', border: '1px solid rgba(59,130,246,0.4)' }}>
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1">
             <p className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>{currentEx.name}</p>
@@ -112,6 +124,16 @@ export default function WarmupSection({ exercises, onComplete }: Props) {
         </div>
 
         <div className="flex gap-2 mt-4">
+          {/* Back button */}
+          {currentIdx > 0 && (
+            <button
+              onClick={goBack}
+              className="px-3 py-2 rounded-xl text-sm font-semibold"
+              style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
+            >
+              ← Back
+            </button>
+          )}
           <button
             onClick={isRunning ? pause : start}
             className="flex-1 py-2 rounded-xl text-sm font-semibold"
