@@ -47,7 +47,7 @@ export default function CalisthenicsTracker({ data }: Props) {
           />
           <Tooltip
             contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 8, fontSize: 12 }}
-            formatter={(v: number, name: string) => [`${v} kg`, name]}
+            formatter={(v, name) => [`${v} kg`, name]}
             labelStyle={{ color: 'var(--text-primary)' }}
           />
           <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 10 }} />

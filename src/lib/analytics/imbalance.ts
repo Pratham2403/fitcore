@@ -32,14 +32,14 @@ export function detectImbalances(
   const results: ImbalanceResult[] = []
   const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length
 
-  for (const [exerciseName, { left, right }] of byExercise) {
-    if (left.length < minSetsPerSide || right.length < minSetsPerSide) continue
+  Array.from(byExercise.entries()).forEach(([exerciseName, { left, right }]) => {
+    if (left.length < minSetsPerSide || right.length < minSetsPerSide) return
     const leftAvg = avg(left)
     const rightAvg = avg(right)
     const maxAvg = Math.max(leftAvg, rightAvg)
-    if (maxAvg === 0) continue
+    if (maxAvg === 0) return
     const asymmetryPct = Math.abs(leftAvg - rightAvg) / maxAvg * 100
-    if (asymmetryPct < thresholdPct) continue
+    if (asymmetryPct < thresholdPct) return
     results.push({
       exerciseName,
       leftAvg: Math.round(leftAvg * 10) / 10,
@@ -47,7 +47,7 @@ export function detectImbalances(
       asymmetryPct: Math.round(asymmetryPct),
       dominantSide: leftAvg >= rightAvg ? 'left' : 'right',
     })
-  }
+  })
 
   return results
 }

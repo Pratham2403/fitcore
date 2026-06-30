@@ -45,11 +45,11 @@ function buildWorkoutIntensity(loggedSets: SetLog[], exercises: Exercise[]): Map
     }
   }
   if (raw.size === 0) return raw
-  const max = Math.max(...raw.values())
+  const max = Math.max(...Array.from(raw.values()))
   const normalized = new Map<MuscleGroup, number>()
-  for (const [mg, val] of raw) {
+  Array.from(raw.entries()).forEach(([mg, val]) => {
     normalized.set(mg, max > 0 ? val / max : 0)
-  }
+  })
   return normalized
 }
 

@@ -40,7 +40,7 @@ export default function VolumeChart({ data }: Props) {
           />
           <Tooltip
             contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 8, fontSize: 12 }}
-            formatter={(v: number) => [`${v} kg`, 'Volume']}
+            formatter={(v) => [`${v} kg`, 'Volume']}
             labelStyle={{ color: 'var(--text-primary)' }}
             cursor={{ fill: 'rgba(255,255,255,0.05)' }}
           />
