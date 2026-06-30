@@ -8,9 +8,10 @@ import type { StretchExercise } from '@/types'
 interface Props {
   exercises: StretchExercise[]
   onComplete: () => void
+  onExerciseComplete?: (name: string) => void
 }
 
-export default function StretchSection({ exercises, onComplete }: Props) {
+export default function StretchSection({ exercises, onComplete, onExerciseComplete }: Props) {
   const [currentIdx, setCurrentIdx] = useState(0)
   const [done, setDone] = useState(false)
 
@@ -19,6 +20,7 @@ export default function StretchSection({ exercises, onComplete }: Props) {
   const { remaining, isRunning, start, pause, reset } = useTimer(
     currentEx?.durationSecs ?? 30,
     () => {
+      onExerciseComplete?.(currentEx.name)
       if (currentIdx < exercises.length - 1) {
         setCurrentIdx(i => i + 1)
         reset(exercises[currentIdx + 1]?.durationSecs ?? 30)
@@ -30,6 +32,7 @@ export default function StretchSection({ exercises, onComplete }: Props) {
   )
 
   function goNext() {
+    onExerciseComplete?.(currentEx.name)
     if (currentIdx < exercises.length - 1) {
       pause()
       const nextIdx = currentIdx + 1

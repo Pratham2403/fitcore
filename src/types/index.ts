@@ -15,6 +15,8 @@ export interface Exercise {
   hasKneeWarning: boolean // leg extension permanent red warning
   defaultWeightKg: number // sensible starting weight for a beginner (0 = bodyweight)
   isAssistance?: boolean  // true for assisted pull-ups/chin-ups/dips — weight should trend DOWN
+  /** Controls how this exercise contributes to Total Volume and which PR type to track. */
+  volumeType: 'weighted' | 'bodyweight_full' | 'reps_only' | 'timed'
   notes: string
   alternatives: string[]
   muscleGroups: string[]
@@ -27,12 +29,14 @@ export interface WarmupExercise {
   joints: string
   how: string
   tip: string
+  muscleGroups?: string[] // muscles activated during this warmup (for LiveMuscleMap)
 }
 
 export interface StretchExercise {
   name: string
   duration: string
   durationSecs: number
+  muscleGroups?: string[] // muscles stretched (for LiveMuscleMap)
 }
 
 export interface DaySession {
@@ -131,6 +135,8 @@ export interface LastSessionData {
   avgWeight: number
   avgReps: number
   perSetReps?: Array<{ setNum: number; reps: number }> // AMRAP exercises only
+  /** True when the same weight was used across the last 3+ sessions (plateau detected). */
+  isPlateaued?: boolean
 }
 
 // Persisted draft for session continuation across app restarts

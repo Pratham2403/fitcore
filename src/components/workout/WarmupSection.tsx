@@ -10,11 +10,12 @@ import type { WarmupExercise } from '@/types'
 interface Props {
   exercises: WarmupExercise[]
   onComplete: () => void
+  onExerciseComplete?: (name: string) => void
 }
 
-export default function WarmupSection({ exercises, onComplete }: Props) {
+export default function WarmupSection({ exercises, onComplete, onExerciseComplete }: Props) {
   const [currentIdx, setCurrentIdx] = useState(0)
-  const [autoFlow, setAutoFlow] = useState(true)
+  const [autoFlow, setAutoFlow] = useState(false)
   const [showTransition, setShowTransition] = useState(false)
   const [done, setDone] = useState(false)
   const { playChime } = useSound()
@@ -26,6 +27,7 @@ export default function WarmupSection({ exercises, onComplete }: Props) {
     () => {
       if (!autoFlow) return
       playChime()
+      onExerciseComplete?.(currentEx.name)
       const isLast = currentIdx === exercises.length - 1
       if (isLast) {
         setDone(true)
@@ -46,6 +48,7 @@ export default function WarmupSection({ exercises, onComplete }: Props) {
   }, [currentIdx])
 
   function goNext() {
+    onExerciseComplete?.(currentEx.name)
     if (currentIdx < exercises.length - 1) {
       setCurrentIdx(i => i + 1)
     } else {

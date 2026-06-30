@@ -27,7 +27,7 @@ const MUSCLE_DAY_MAP: Record<string, string[]> = {
   hamstrings: ['legs_a', 'legs_b'],
   glutes: ['legs_a', 'legs_b'],
   calves: ['legs_a', 'legs_b'],
-  core: ['legs_a', 'legs_b', 'push_a'],
+  core: ['legs_a', 'legs_b'],
 }
 
 export default function MuscleHeatmap({ trainedDayTypes, isRestDay }: Props) {

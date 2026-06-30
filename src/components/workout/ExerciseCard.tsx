@@ -5,6 +5,7 @@ import SetRow from '@/components/workout/SetRow'
 import RestTimer from '@/components/workout/RestTimer'
 import EquipmentSwapSheet from '@/components/workout/EquipmentSwapSheet'
 import { formatRestSecs } from '@/lib/utils'
+import { getPlateauSuggestion } from '@/lib/analytics/plateau'
 import type { Exercise, SetLog, LastSessionData } from '@/types'
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
   onSetLogged: (log: Omit<SetLog, 'id' | 'logged_at'>) => Promise<{ isPR: boolean }>
   nextExerciseName?: string
   initialLoggedRows?: number[]
+  currentBodyweight: number
 }
 
 const REST_PRESETS = [30, 45, 60, 75, 90, 120, 150, 180, 210, 240]
@@ -29,7 +31,7 @@ function suggestWeight(lastWeight: number): number {
 }
 
 export default function ExerciseCard({
-  exercise, sessionId, lastSession, onSetLogged, nextExerciseName, initialLoggedRows = [],
+  exercise, sessionId, lastSession, onSetLogged, nextExerciseName, initialLoggedRows = [], currentBodyweight,
 }: Props) {
   const totalSets = exercise.sets * (exercise.isUnilateral ? 2 : 1)
   const [loggedSets, setLoggedSets] = useState<Set<number>>(new Set(initialLoggedRows))
@@ -43,11 +45,16 @@ export default function ExerciseCard({
 
   const displayName = swappedName ?? exercise.name
   const defaultReps = parseDefaultReps(exercise.reps)
-  const defaultWeight = lastSession?.avgWeight ?? exercise.defaultWeightKg
+  const defaultWeight = lastSession?.avgWeight ??
+    (exercise.volumeType === 'bodyweight_full' ? currentBodyweight : exercise.defaultWeightKg)
   const isAmrap = exercise.reps === 'AMRAP'
   const isSwapped = swappedName !== null
   const allLogged = loggedSets.size >= totalSets
   const sideLabels = exercise.isUnilateral ? ['left', 'right'] : [null]
+
+  const plateauSuggestion = (!isAmrap && lastSession?.isPlateaued)
+    ? getPlateauSuggestion(lastSession.avgWeight, exercise.alternatives)
+    : null
 
   // Calisthenics progression check: all sets ≥ 8 reps → suggest reducing assistance
   const assistanceReady = exercise.isAssistance &&
@@ -193,16 +200,29 @@ export default function ExerciseCard({
             )}
           </div>
         ) : !isAmrap && lastSession ? (
-          /* Standard progressive overload nudge */
-          <div className="mt-2 px-3 py-2 rounded-xl text-xs"
-            style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
-            <span style={{ color: 'var(--text-secondary)' }}>
-              Last: {lastSession.avgReps} reps @ {lastSession.avgWeight}kg
-            </span>
-            <span className="ml-2 font-semibold" style={{ color: 'var(--accent-blue)' }}>
-              → Try {suggestWeight(lastSession.avgWeight)}kg today
-            </span>
-          </div>
+          lastSession.isPlateaued ? (
+            /* Plateau suggestion */
+            <div className="mt-2 px-3 py-2 rounded-xl text-xs"
+              style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)' }}>
+              <span style={{ color: 'var(--accent-orange)' }}>
+                🔁 Plateau @ {lastSession.avgWeight}kg —
+              </span>
+              <span className="ml-1 font-semibold" style={{ color: 'var(--accent-orange)' }}>
+                {plateauSuggestion?.text}
+              </span>
+            </div>
+          ) : (
+            /* Standard progressive overload nudge */
+            <div className="mt-2 px-3 py-2 rounded-xl text-xs"
+              style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
+              <span style={{ color: 'var(--text-secondary)' }}>
+                Last: {lastSession.avgReps} reps @ {lastSession.avgWeight}kg
+              </span>
+              <span className="ml-2 font-semibold" style={{ color: 'var(--accent-blue)' }}>
+                → Try {suggestWeight(lastSession.avgWeight)}kg today
+              </span>
+            </div>
+          )
         ) : null}
 
         <p className="text-xs mt-2 leading-relaxed" style={{ color: 'var(--text-tertiary)' }}>

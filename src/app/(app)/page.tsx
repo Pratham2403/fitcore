@@ -6,6 +6,8 @@ import StreakBadge from '@/components/home/StreakBadge'
 import WellnessScore from '@/components/home/WellnessScore'
 import MuscleHeatmap from '@/components/home/MuscleHeatmap'
 import { getGreeting, getTodayDayType, getDayLabel, toISODate, getWeekStart, getLastWeekStart } from '@/lib/utils'
+import DeloadAlert from '@/components/home/DeloadAlert'
+import { computeACWR } from '@/lib/analytics/acwr'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,6 +20,7 @@ export default async function HomePage() {
   const weekStart = getWeekStart()
   const lastWeekStart = getLastWeekStart()
   const dayType = getTodayDayType()
+  const fourWeeksAgo = toISODate(new Date(Date.now() - 28 * 86400000))
 
   const [
     { data: streakData },
@@ -26,6 +29,7 @@ export default async function HomePage() {
     { data: latestWeight },
     { data: lastWeekSessions },
     { data: latestPR },
+    { data: fourWeekSessions },
   ] = await Promise.all([
     supabase.from('streaks').select('*').single(),
     supabase.from('workout_sessions').select('*').eq('date', today).order('created_at', { ascending: false }).limit(1).single(),
@@ -33,6 +37,7 @@ export default async function HomePage() {
     supabase.from('body_metrics').select('weight_kg').order('date', { ascending: false }).limit(1).single(),
     supabase.from('workout_sessions').select('total_volume_kg').gte('date', lastWeekStart).lt('date', weekStart).eq('status', 'completed'),
     supabase.from('personal_records').select('exercise_name, value, set_on').eq('record_type', 'max_weight').order('set_on', { ascending: false }).limit(1).single(),
+    supabase.from('workout_sessions').select('date, total_volume_kg').gte('date', fourWeeksAgo).eq('status', 'completed'),
   ])
 
   const streak = streakData ?? { current_streak: 0, longest_streak: 0, total_sessions: 0 }
@@ -45,6 +50,8 @@ export default async function HomePage() {
   const thisWeekVol = (weekSessions ?? []).reduce((sum, s) => sum + ((s as { total_volume_kg?: number }).total_volume_kg ?? 0), 0)
   const lastWeekVol = (lastWeekSessions ?? []).reduce((sum, s) => sum + ((s as { total_volume_kg?: number }).total_volume_kg ?? 0), 0)
   const volDelta = lastWeekVol > 0 ? Math.round(((thisWeekVol - lastWeekVol) / lastWeekVol) * 100) : null
+
+  const acwrResult = computeACWR((fourWeekSessions ?? []) as { date: string; total_volume_kg: number | null }[])
 
   const greeting = getGreeting()
   const sessionLabel = isRestDay ? 'Rest Day — Full Recovery' : getDayLabel(dayType)
@@ -171,6 +178,15 @@ export default async function HomePage() {
             {new Date((latestPR as { set_on: string }).set_on).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
           </p>
         </div>
+      )}
+
+      {/* Deload alert */}
+      {acwrResult.shouldDeload && (
+        <DeloadAlert
+          acwr={acwrResult.acwr}
+          acuteLoad={acwrResult.acuteLoad}
+          chronicLoad={acwrResult.chronicLoad}
+        />
       )}
 
       {/* Muscle heatmap */}

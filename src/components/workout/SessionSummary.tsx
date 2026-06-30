@@ -7,11 +7,12 @@ interface Props {
   prCount: number
   wellnessScore: number
   streakCount: number
+  coreReps: number
   onClose: () => void
 }
 
 export default function SessionSummary({
-  dayLabel, durationMin, totalVolume, prCount, wellnessScore, streakCount, onClose,
+  dayLabel, durationMin, totalVolume, prCount, wellnessScore, streakCount, coreReps, onClose,
 }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4"
@@ -31,6 +32,10 @@ export default function SessionSummary({
           <StatBox label="PRs hit" value={prCount.toString()} highlight={prCount > 0} />
           <StatBox label="Wellness" value={wellnessScore.toFixed(1)} />
         </div>
+
+        {coreReps > 0 && (
+          <StatBox label="Core" value={`${coreReps} reps`} />
+        )}
 
         {streakCount > 0 && (
           <div className="text-center py-3 rounded-2xl"

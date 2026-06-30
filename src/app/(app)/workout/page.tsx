@@ -9,9 +9,13 @@ import StretchSection from '@/components/workout/StretchSection'
 import SessionSummary from '@/components/workout/SessionSummary'
 import ResumeSessionModal from '@/components/workout/ResumeSessionModal'
 import PostWorkoutMood from '@/components/workout/PostWorkoutMood'
+import LiveMuscleMap from '@/components/workout/LiveMuscleMap'
 import { getSupabaseClient } from '@/lib/supabase/client'
 import { DAY_SESSIONS, DAY_OF_WEEK_MAP, FULL_BODY_WARMUP } from '@/lib/workoutData'
 import { toISODate, getDayLabel } from '@/lib/utils'
+import { createWorkoutSession, createWorkoutSessionEmpty, logSet as logSetAction, finalizeSession as finalizeSessionAction, deleteWorkoutSession, fetchSessionSets } from '@/lib/workout/actions'
+import { getLastSessionData } from '@/lib/workout/queries'
+import { calculateTotalVolume, calculateCoreReps } from '@/lib/workout/volume'
 import type { DayType, SetLog, ReadinessCheckIn as ReadinessData, SessionDraft, LastSessionData } from '@/types'
 
 type Phase = 'readiness' | 'warmup' | 'workout' | 'stretch' | 'post_mood' | 'summary'
@@ -49,8 +53,6 @@ function rowIdxFromLog(setNumber: number, side: string | null, isUnilateral: boo
   return setNumber - 1
 }
 
-const supabase = getSupabaseClient()
-
 export default function WorkoutPage() {
   const [dayType, setDayType] = useState<DayType>(getDefaultDayType)
   const [phase, setPhase] = useState<Phase>('readiness')
@@ -64,14 +66,20 @@ export default function WorkoutPage() {
   const [useFullBodyWarmup, setUseFullBodyWarmup] = useState(false)
   const [pendingDraft, setPendingDraft] = useState<SessionDraft | null>(null)
   const [lastSessionData, setLastSessionData] = useState<Record<string, LastSessionData | null>>({})
+  const [currentBodyweight, setCurrentBodyweight] = useState(0)
+  const [completedWarmups, setCompletedWarmups] = useState<string[]>([])
+  const [completedStretches, setCompletedStretches] = useState<string[]>([])
   const sessionCreated = useRef(false)
 
   const session = DAY_SESSIONS[dayType]
 
-  // Check for a resumable draft on mount
+  // Check for a resumable draft on mount; fetch latest bodyweight for bodyweight_full pre-fill
   useEffect(() => {
     const draft = loadDraft()
     if (draft) setPendingDraft(draft)
+
+    getSupabaseClient().from('body_metrics').select('weight_kg').order('date', { ascending: false }).limit(1).single()
+      .then(({ data }) => { if (data?.weight_kg) setCurrentBodyweight(data.weight_kg) })
   }, [])
 
   // Persist draft whenever phase transitions into a saveable phase
@@ -103,14 +111,11 @@ export default function WorkoutPage() {
     // phase is set AFTER the fetch so React batches it with loggedRowsByExercise —
     // ExerciseCards mount once, already seeing the correct initialLoggedRows
 
-    const { data: sets } = await supabase
-      .from('set_logs')
-      .select('*')
-      .eq('session_id', draft.sessionId)
+    const sets = await fetchSessionSets(draft.sessionId)
 
     const rowMap: Record<string, number[]> = {}
-    if (sets?.length) {
-      setLoggedSets(sets as SetLog[])
+    if (sets.length) {
+      setLoggedSets(sets)
       const daySession = DAY_SESSIONS[draft.dayType]
       for (const log of sets) {
         const ex = daySession.exercises.find(e => e.name === log.exercise_name)
@@ -128,7 +133,7 @@ export default function WorkoutPage() {
   // Discard a saved session — delete from DB and clear localStorage
   async function handleDiscard() {
     if (!pendingDraft) return
-    await supabase.from('workout_sessions').delete().eq('id', pendingDraft.sessionId)
+    await deleteWorkoutSession(pendingDraft.sessionId)
     clearDraft()
     setPendingDraft(null)
   }
@@ -139,164 +144,44 @@ export default function WorkoutPage() {
     sessionCreated.current = true
     setReadiness(r)
 
-    const wellnessScore = (r.sleep + r.energy + r.soreness + r.protein) / 4
-    const { data } = await supabase.from('workout_sessions').insert({
-      date: toISODate(),
-      day_type: dayType,
-      status: 'in_progress',
-      readiness_sleep: r.sleep,
-      readiness_energy: r.energy,
-      readiness_soreness: r.soreness,
-      readiness_protein: r.protein,
-      wellness_score: wellnessScore,
-    }).select().single()
-
-    if (data) setSessionId(data.id)
+    const id = await createWorkoutSession(dayType, r)
+    if (id) setSessionId(id)
     setPhase('warmup')
   }
 
   async function handleSkipReadiness() {
     if (sessionCreated.current) return
     sessionCreated.current = true
-    const { data } = await supabase.from('workout_sessions').insert({
-      date: toISODate(),
-      day_type: dayType,
-      status: 'in_progress',
-    }).select().single()
-    if (data) setSessionId(data.id)
+    const id = await createWorkoutSessionEmpty(dayType)
+    if (id) setSessionId(id)
     setPhase('warmup')
   }
 
   const handleSetLogged = useCallback(async (log: Omit<SetLog, 'id' | 'logged_at'>): Promise<{ isPR: boolean }> => {
     if (!sessionId) return { isPR: false }
-
-    const { data: setData } = await supabase.from('set_logs').insert(log).select().single()
-    if (setData) setLoggedSets(prev => [...prev, setData])
-
-    let isPR = false
-    if (log.weight_kg && log.reps) {
-      const { data: existing } = await supabase
-        .from('personal_records')
-        .select('value')
-        .eq('exercise_name', log.exercise_name)
-        .eq('record_type', 'max_weight')
-        .single()
-
-      if (!existing || log.weight_kg > existing.value) {
-        await supabase.from('personal_records').upsert({
-          exercise_name: log.exercise_name,
-          record_type: 'max_weight',
-          value: log.weight_kg,
-          set_on: toISODate(),
-          session_id: sessionId,
-        }, { onConflict: 'exercise_name,record_type' })
-        isPR = true
-        setPrCount(p => p + 1)
-        if (setData) await supabase.from('set_logs').update({ is_pr: true }).eq('id', setData.id)
-      }
-    }
-
+    const { setId, isPR } = await logSetAction(log, sessionId)
+    if (setId) setLoggedSets(prev => [...prev, { ...log, id: setId, logged_at: new Date().toISOString() } as SetLog])
+    if (isPR) setPrCount(p => p + 1)
     return { isPR }
   }, [sessionId])
 
   // Finalize after post-workout mood is collected
   async function finalizeSession(workoutMood: 1 | 2 | 3, energyMood: 1 | 2 | 3) {
     if (!sessionId) return
-
-    const durationMin = Math.round((Date.now() - sessionStartTime) / 60000)
-    const totalVolume = loggedSets.reduce((sum, s) => sum + (s.reps ?? 0) * (s.weight_kg ?? 0), 0)
-    const wellnessScore = readiness ? (readiness.sleep + readiness.energy + readiness.soreness + readiness.protein) / 4 : null
-
-    await supabase.from('workout_sessions').update({
-      status: 'completed',
-      duration_min: durationMin,
-      total_volume_kg: totalVolume,
-      wellness_score: wellnessScore,
-      post_mood_workout: workoutMood,
-      post_mood_energy: energyMood,
-      completed_at: new Date().toISOString(),
-    }).eq('id', sessionId)
-
-    const today = toISODate()
-    const yesterday = toISODate(new Date(Date.now() - 86400000))
-    const { data: streakRow } = await supabase.from('streaks').select('*').single()
-
-    if (streakRow) {
-      let newStreak = 1
-      if (streakRow.last_workout_date === yesterday) {
-        newStreak = streakRow.current_streak + 1
-      } else if (streakRow.last_workout_date === today) {
-        newStreak = streakRow.current_streak
-      }
-      const newLongest = Math.max(newStreak, streakRow.longest_streak ?? 0)
-      setStreak(newStreak)
-
-      await supabase.from('streaks').update({
-        current_streak: newStreak,
-        longest_streak: newLongest,
-        last_workout_date: today,
-        total_sessions: (streakRow.total_sessions ?? 0) + 1,
-        updated_at: new Date().toISOString(),
-      }).eq('id', streakRow.id)
-    }
-
+    const newStreak = await finalizeSessionAction(sessionId, loggedSets, readiness, sessionStartTime, workoutMood, energyMood)
+    setStreak(newStreak)
     clearDraft()
     setPhase('summary')
   }
 
-  // Fetch last session data — includes per-set reps for AMRAP exercises
   useEffect(() => {
-    async function fetchLastSets() {
-      const result: Record<string, LastSessionData | null> = {}
-      for (const ex of session.exercises) {
-        const { data: sessions } = await supabase
-          .from('workout_sessions')
-          .select('id')
-          .eq('status', 'completed')
-          .order('date', { ascending: false })
-          .limit(10)
-
-        if (!sessions?.length) { result[ex.name] = null; continue }
-
-        let found = false
-        for (const s of sessions) {
-          const { data: sets } = await supabase
-            .from('set_logs')
-            .select('reps, weight_kg, set_number')
-            .eq('session_id', s.id)
-            .eq('exercise_name', ex.name)
-            .order('set_number', { ascending: true })
-
-          if (sets?.length) {
-            const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length
-            const entry: LastSessionData = {
-              avgWeight: avg(sets.map(r => r.weight_kg ?? 0)),
-              avgReps: Math.round(avg(sets.map(r => r.reps ?? 0))),
-            }
-            if (ex.reps === 'AMRAP') {
-              const bySet: Record<number, number> = {}
-              for (const row of sets) {
-                bySet[row.set_number] = Math.max(bySet[row.set_number] ?? 0, row.reps ?? 0)
-              }
-              entry.perSetReps = Object.entries(bySet)
-                .map(([sn, reps]) => ({ setNum: Number(sn), reps }))
-                .sort((a, b) => a.setNum - b.setNum)
-            }
-            result[ex.name] = entry
-            found = true
-            break
-          }
-        }
-        if (!found) result[ex.name] = null
-      }
-      setLastSessionData(result)
-    }
-    fetchLastSets()
+    getLastSessionData(dayType).then(setLastSessionData)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dayType])
 
   const durationMin = Math.round((Date.now() - sessionStartTime) / 60000)
-  const totalVolume = loggedSets.reduce((sum, s) => sum + (s.reps ?? 0) * (s.weight_kg ?? 0), 0)
+  const totalVolume = calculateTotalVolume(loggedSets)
+  const coreReps = calculateCoreReps(loggedSets, session.exercises)
   const wellnessScore = readiness ? (readiness.sleep + readiness.energy + readiness.soreness + readiness.protein) / 4 : 2
 
   return (
@@ -313,12 +198,12 @@ export default function WorkoutPage() {
         <h1 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
           {getDayLabel(dayType)}
         </h1>
-        {phase === 'readiness' && (
+        {phase === 'readiness' && !sessionId && (
           <DaySelector selected={dayType} onChange={d => { setDayType(d); sessionCreated.current = false }} />
         )}
       </div>
 
-      {phase === 'readiness' && (
+      {phase === 'readiness' && !sessionId && (
         <ReadinessCheckIn onComplete={initSession} onSkip={handleSkipReadiness} />
       )}
 
@@ -341,6 +226,16 @@ export default function WorkoutPage() {
           <WarmupSection
             exercises={useFullBodyWarmup ? FULL_BODY_WARMUP : session.warmup}
             onComplete={() => setPhase('workout')}
+            onExerciseComplete={name => setCompletedWarmups(prev => prev.includes(name) ? prev : [...prev, name])}
+          />
+          <LiveMuscleMap
+            phase="warmup"
+            loggedSets={loggedSets}
+            completedWarmups={completedWarmups}
+            completedStretches={completedStretches}
+            exercises={session.exercises}
+            warmupExercises={useFullBodyWarmup ? FULL_BODY_WARMUP : session.warmup}
+            stretchExercises={session.stretch}
           />
         </div>
       )}
@@ -357,8 +252,18 @@ export default function WorkoutPage() {
               onSetLogged={handleSetLogged}
               nextExerciseName={session.exercises[i + 1]?.name}
               initialLoggedRows={loggedRowsByExercise[ex.name] ?? []}
+              currentBodyweight={currentBodyweight}
             />
           ))}
+          <LiveMuscleMap
+            phase="workout"
+            loggedSets={loggedSets}
+            completedWarmups={completedWarmups}
+            completedStretches={completedStretches}
+            exercises={session.exercises}
+            warmupExercises={session.warmup}
+            stretchExercises={session.stretch}
+          />
           <button
             onClick={() => setPhase('stretch')}
             className="w-full py-3 rounded-2xl text-sm font-semibold mt-2"
@@ -372,7 +277,20 @@ export default function WorkoutPage() {
       {phase === 'stretch' && (
         <div className="space-y-4">
           <SectionHeader title="Cool-down Stretch" subtitle="5 min" />
-          <StretchSection exercises={session.stretch} onComplete={() => setPhase('post_mood')} />
+          <StretchSection
+            exercises={session.stretch}
+            onComplete={() => setPhase('post_mood')}
+            onExerciseComplete={name => setCompletedStretches(prev => prev.includes(name) ? prev : [...prev, name])}
+          />
+          <LiveMuscleMap
+            phase="stretch"
+            loggedSets={loggedSets}
+            completedWarmups={completedWarmups}
+            completedStretches={completedStretches}
+            exercises={session.exercises}
+            warmupExercises={session.warmup}
+            stretchExercises={session.stretch}
+          />
         </div>
       )}
 
@@ -388,6 +306,7 @@ export default function WorkoutPage() {
           prCount={prCount}
           wellnessScore={wellnessScore}
           streakCount={streak}
+          coreReps={coreReps}
           onClose={() => window.location.href = '/'}
         />
       )}

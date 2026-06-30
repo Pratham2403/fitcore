@@ -4,6 +4,9 @@ import { useState } from 'react'
 import { getDayLabel } from '@/lib/utils'
 import type { DayType } from '@/types'
 
+const WORKOUT_MOOD: Record<number, string> = { 1: '😊 Smooth', 2: '💪 Solid', 3: '🔥 Brutal' }
+const ENERGY_MOOD: Record<number, string> = { 1: '🪫 Drained', 2: '😐 Fine', 3: '⚡ Energized' }
+
 type Session = {
   id: string
   date: string
@@ -12,6 +15,8 @@ type Session = {
   duration_min?: number
   total_volume_kg?: number
   wellness_score?: number
+  post_mood_workout?: number
+  post_mood_energy?: number
 }
 
 type FilterGroup = 'all' | 'push' | 'pull' | 'legs'
@@ -90,10 +95,22 @@ export default function SessionList({ sessions }: Props) {
               </button>
 
               {expanded === s.id && (
-                <div className="px-4 pb-4 grid grid-cols-3 gap-2 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-                  <MiniStat label="Duration" value={s.duration_min ? `${s.duration_min}m` : '—'} />
-                  <MiniStat label="Volume" value={s.total_volume_kg ? `${Math.round(s.total_volume_kg).toLocaleString()}kg` : '—'} />
-                  <MiniStat label="Wellness" value={s.wellness_score ? s.wellness_score.toFixed(1) : '—'} />
+                <div className="px-4 pb-4 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <div className="grid grid-cols-3 gap-2">
+                    <MiniStat label="Duration" value={s.duration_min ? `${s.duration_min}m` : '—'} />
+                    <MiniStat label="Volume" value={s.total_volume_kg ? `${Math.round(s.total_volume_kg).toLocaleString()}kg` : '—'} />
+                    <MiniStat label="Wellness" value={s.wellness_score ? s.wellness_score.toFixed(1) : '—'} />
+                  </div>
+                  {(s.post_mood_workout || s.post_mood_energy) && (
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      {s.post_mood_workout && (
+                        <MiniStat label="Session" value={WORKOUT_MOOD[s.post_mood_workout] ?? '—'} />
+                      )}
+                      {s.post_mood_energy && (
+                        <MiniStat label="Energy" value={ENERGY_MOOD[s.post_mood_energy] ?? '—'} />
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

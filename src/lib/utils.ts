@@ -28,12 +28,12 @@ export function getTodayDayType(): DayType | 'rest' {
 
 export function getDayLabel(dayType: DayType | 'rest'): string {
   const labels: Record<string, string> = {
-    push_a: 'Push A — Chest Primary',
-    pull_a: 'Pull A — Back Width',
-    legs_a: 'Legs A — Quad Focus',
-    push_b: 'Push B — Shoulder Primary',
-    pull_b: 'Pull B — Thickness & Arms',
-    legs_b: 'Legs B — Posterior Chain',
+    push_a: 'Push A — Chest + Triceps',
+    pull_a: 'Pull A — Back + Biceps + Forearms',
+    legs_a: 'Legs A — Quad-Dominant + Core',
+    push_b: 'Push B — Chest + Shoulders + Triceps',
+    pull_b: 'Pull B — Back + Biceps + Forearms',
+    legs_b: 'Legs B — Hip/Posterior-Dominant + Core',
     rest: 'Rest Day',
   }
   return labels[dayType] ?? dayType

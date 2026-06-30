@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 
 interface Props {
   show: boolean
@@ -45,12 +46,15 @@ export default function PRBadge({ show }: Props) {
         />
       ))}
       {/* Badge */}
-      <span
+      <motion.span
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 18 }}
         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold"
         style={{ background: '#F59E0B', color: '#000' }}
       >
         ★ New PR
-      </span>
+      </motion.span>
     </div>
   )
 }
