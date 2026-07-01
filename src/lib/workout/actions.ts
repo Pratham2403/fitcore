@@ -112,29 +112,9 @@ export async function finalizeSession(
     completed_at: new Date().toISOString(),
   }).eq('id', sessionId)
 
-  const today = toISODate()
-  const yesterday = toISODate(new Date(Date.now() - 86400000))
-  const { data: streakRow } = await supabase.from('streaks').select('*').single()
-
-  if (!streakRow) return 0
-
-  let newStreak = 1
-  if (streakRow.last_workout_date === yesterday) {
-    newStreak = streakRow.current_streak + 1
-  } else if (streakRow.last_workout_date === today) {
-    newStreak = streakRow.current_streak
-  }
-  const newLongest = Math.max(newStreak, streakRow.longest_streak ?? 0)
-
-  await supabase.from('streaks').update({
-    current_streak: newStreak,
-    longest_streak: newLongest,
-    last_workout_date: today,
-    total_sessions: (streakRow.total_sessions ?? 0) + 1,
-    updated_at: new Date().toISOString(),
-  }).eq('id', streakRow.id)
-
-  return newStreak
+  // The DB trigger on workout_sessions updates streaks atomically on completion.
+  const { data: streak } = await supabase.from('streaks').select('current_streak').single()
+  return streak?.current_streak ?? 0
 }
 
 export async function deleteWorkoutSession(sessionId: string): Promise<void> {
