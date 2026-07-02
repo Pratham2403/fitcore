@@ -19,13 +19,14 @@ type Session = {
   post_mood_energy?: number
 }
 
-type FilterGroup = 'all' | 'push' | 'pull' | 'legs'
+type FilterGroup = 'all' | 'push' | 'pull' | 'legs' | 'recovery'
 
 const FILTER_MAP: Record<FilterGroup, string[]> = {
   all: [],
   push: ['push_a', 'push_b'],
   pull: ['pull_a', 'pull_b'],
   legs: ['legs_a', 'legs_b'],
+  recovery: ['recovery'],
 }
 
 const FILTER_CHIPS: { key: FilterGroup; label: string }[] = [
@@ -33,6 +34,7 @@ const FILTER_CHIPS: { key: FilterGroup; label: string }[] = [
   { key: 'push', label: 'Push' },
   { key: 'pull', label: 'Pull' },
   { key: 'legs', label: 'Legs' },
+  { key: 'recovery', label: 'Recovery' },
 ]
 
 interface Props {
@@ -85,7 +87,7 @@ export default function SessionList({ sessions }: Props) {
               >
                 <div>
                   <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                    {getDayLabel(s.day_type as DayType | 'rest')}
+                    {getDayLabel(s.day_type as DayType)}
                   </p>
                   <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
                     {new Date(s.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}

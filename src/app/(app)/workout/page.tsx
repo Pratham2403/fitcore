@@ -43,9 +43,7 @@ function clearDraft() {
 }
 
 function getDefaultDayType(): DayType {
-  const day = new Date().getDay()
-  const mapped = DAY_OF_WEEK_MAP[day]
-  return (mapped === 'rest' ? 'push_a' : mapped) as DayType
+  return DAY_OF_WEEK_MAP[new Date().getDay()]
 }
 
 function rowIdxFromLog(setNumber: number, side: string | null, isUnilateral: boolean): number {

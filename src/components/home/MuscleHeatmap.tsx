@@ -6,7 +6,6 @@
 
 interface Props {
   trainedDayTypes: string[]  // day_types completed this week
-  isRestDay: boolean
 }
 
 function getOpacity(count: number): number {
@@ -30,16 +29,7 @@ const MUSCLE_DAY_MAP: Record<string, string[]> = {
   core: ['legs_a', 'legs_b'],
 }
 
-export default function MuscleHeatmap({ trainedDayTypes, isRestDay }: Props) {
-  if (isRestDay) {
-    return (
-      <div className="rounded-2xl p-4 text-center" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
-        <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Rest Day — Full Recovery</p>
-        <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>Every joint and muscle group resting today</p>
-      </div>
-    )
-  }
-
+export default function MuscleHeatmap({ trainedDayTypes }: Props) {
   function muscleOpacity(muscle: string): number {
     const days = MUSCLE_DAY_MAP[muscle] ?? []
     const count = trainedDayTypes.filter(d => days.includes(d)).length

@@ -13,9 +13,9 @@ export function getGreeting(): string {
   return 'Good evening'
 }
 
-export function getTodayDayType(): DayType | 'rest' {
-  const map: Record<number, DayType | 'rest'> = {
-    0: 'rest',
+export function getTodayDayType(): DayType {
+  const map: Record<number, DayType> = {
+    0: 'recovery',
     1: 'push_a',
     2: 'pull_a',
     3: 'legs_a',
@@ -26,17 +26,17 @@ export function getTodayDayType(): DayType | 'rest' {
   return map[new Date().getDay()]
 }
 
-export function getDayLabel(dayType: DayType | 'rest'): string {
-  const labels: Record<string, string> = {
+export function getDayLabel(dayType: DayType): string {
+  const labels: Record<DayType, string> = {
     push_a: 'Push A — Chest + Triceps',
     pull_a: 'Pull A — Back + Biceps + Forearms',
     legs_a: 'Legs A — Quad-Dominant + Core',
     push_b: 'Push B — Chest + Shoulders + Triceps',
     pull_b: 'Pull B — Back + Biceps + Forearms',
     legs_b: 'Legs B — Hip/Posterior-Dominant + Core',
-    rest: 'Rest Day',
+    recovery: 'Recovery — Cardio + Mobility',
   }
-  return labels[dayType] ?? dayType
+  return labels[dayType]
 }
 
 export function toISODate(date = new Date()): string {

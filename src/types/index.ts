@@ -1,4 +1,4 @@
-export type DayType = 'push_a' | 'pull_a' | 'legs_a' | 'push_b' | 'pull_b' | 'legs_b'
+export type DayType = 'push_a' | 'pull_a' | 'legs_a' | 'push_b' | 'pull_b' | 'legs_b' | 'recovery'
 export type SessionStatus = 'in_progress' | 'completed' | 'skipped'
 export type RecordType = 'max_weight' | 'max_reps' | 'max_duration_secs'
 export type Side = 'left' | 'right' | null
@@ -43,7 +43,7 @@ export interface DaySession {
   dayType: DayType
   label: string
   focus: string
-  warmupProtocol: 'push' | 'pull' | 'legs'
+  warmupProtocol: 'push' | 'pull' | 'legs' | 'recovery'
   warmupDurationMins: number
   exercises: Exercise[]
   warmup: WarmupExercise[]

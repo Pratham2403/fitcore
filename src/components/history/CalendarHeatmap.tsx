@@ -13,6 +13,7 @@ const DAY_COLORS: Record<string, string> = {
   pull_b: '#10B981',
   legs_a: '#F59E0B',
   legs_b: '#F59E0B',
+  recovery: '#8B5CF6',
 }
 
 export default function CalendarHeatmap({ sessions }: Props) {
@@ -74,7 +75,7 @@ export default function CalendarHeatmap({ sessions }: Props) {
         ))}
       </div>
       <div className="flex items-center gap-4 mt-3">
-        {[['Push', '#3B82F6'], ['Pull', '#10B981'], ['Legs', '#F59E0B']].map(([label, color]) => (
+        {[['Push', '#3B82F6'], ['Pull', '#10B981'], ['Legs', '#F59E0B'], ['Recovery', '#8B5CF6']].map(([label, color]) => (
           <div key={label} className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded-sm" style={{ background: color }} />
             <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>{label}</span>

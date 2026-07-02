@@ -45,7 +45,6 @@ export default async function HomePage() {
   const currentWeight = latestWeight?.weight_kg ?? null
   const wellnessScore = (todaySession as { wellness_score?: number } | null)?.wellness_score ?? null
   const trainedThisWeek = (weekSessions ?? []).map((s: { day_type: string }) => s.day_type)
-  const isRestDay = dayType === 'rest'
 
   const thisWeekVol = (weekSessions ?? []).reduce((sum, s) => sum + ((s as { total_volume_kg?: number }).total_volume_kg ?? 0), 0)
   const lastWeekVol = (lastWeekSessions ?? []).reduce((sum, s) => sum + ((s as { total_volume_kg?: number }).total_volume_kg ?? 0), 0)
@@ -54,7 +53,7 @@ export default async function HomePage() {
   const acwrResult = computeACWR((fourWeekSessions ?? []) as { date: string; total_volume_kg: number | null }[])
 
   const greeting = getGreeting()
-  const sessionLabel = isRestDay ? 'Rest Day — Full Recovery' : getDayLabel(dayType)
+  const sessionLabel = getDayLabel(dayType)
 
   return (
     <div className="px-4 pt-6 pb-4 max-w-lg mx-auto space-y-4">
@@ -78,21 +77,14 @@ export default async function HomePage() {
             <p className="text-xs font-medium mb-0.5" style={{ color: 'var(--text-tertiary)' }}>TODAY</p>
             <p className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>{sessionLabel}</p>
           </div>
-          {!isRestDay && (
-            <Link
-              href="/workout"
-              className="px-4 py-2 rounded-xl text-sm font-semibold"
-              style={{ background: 'var(--accent-emerald)', color: '#fff' }}
-            >
-              Start
-            </Link>
-          )}
+          <Link
+            href="/workout"
+            className="px-4 py-2 rounded-xl text-sm font-semibold"
+            style={{ background: 'var(--accent-emerald)', color: '#fff' }}
+          >
+            Start
+          </Link>
         </div>
-        {isRestDay && (
-          <p className="text-xs mt-2" style={{ color: 'var(--text-tertiary)' }}>
-            Recovery is where the muscle is built. Eat, sleep, hydrate.
-          </p>
-        )}
       </div>
 
       {/* Streak row */}
@@ -129,7 +121,7 @@ export default async function HomePage() {
           </p>
           <span className="text-base font-mono font-semibold" style={{ color: 'var(--text-primary)' }}>
             {weekCount}
-            <span className="text-xs font-normal ml-0.5" style={{ color: 'var(--text-tertiary)' }}>/6</span>
+            <span className="text-xs font-normal ml-0.5" style={{ color: 'var(--text-tertiary)' }}>/7</span>
           </span>
         </div>
       </div>
@@ -190,7 +182,7 @@ export default async function HomePage() {
       )}
 
       {/* Muscle heatmap */}
-      <MuscleHeatmap trainedDayTypes={trainedThisWeek} isRestDay={isRestDay} />
+      <MuscleHeatmap trainedDayTypes={trainedThisWeek} />
     </div>
   )
 }

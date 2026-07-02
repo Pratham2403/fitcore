@@ -1,4 +1,4 @@
-import type { DaySession, WarmupExercise, StretchExercise, Quote } from '@/types'
+import type { DayType, DaySession, WarmupExercise, StretchExercise, Quote } from '@/types'
 
 // ─── Warmup Protocols ────────────────────────────────────────────────────────
 
@@ -530,7 +530,7 @@ export const LEGS_A: DaySession = {
     },
     {
       name: 'Hip Abduction Machine',
-      sets: 3,
+      sets: 2,
       reps: '20',
       restSecs: 10,
       isTimed: false,
@@ -538,14 +538,14 @@ export const LEGS_A: DaySession = {
       isMandatory: false,
       hasKneeWarning: false,
       defaultWeightKg: 10,
-      notes: 'Superset → go immediately to Hip Adduction Machine after each set (no rest between). Targets gluteus medius — this is the muscle that widens your hip silhouette and improves WHR. Full ROM each rep. Start: 10 kg.',
+      notes: 'Superset → go immediately to Hip Adduction Machine after each set (no rest between). Functional dose for gluteus medius — supports hip stability and knee tracking under load. Not a growth-focused dose. Full ROM each rep. Start: 10 kg.',
       alternatives: [],
       volumeType: 'weighted',
       muscleGroups: ['glutes'],
     },
     {
       name: 'Hip Adduction Machine',
-      sets: 3,
+      sets: 2,
       reps: '20',
       restSecs: 60,
       isTimed: false,
@@ -868,6 +868,21 @@ export const LEGS_B: DaySession = {
       muscleGroups: ['hamstrings', 'glutes', 'back'],
     },
     {
+      name: 'Smith Machine Hip Thrust',
+      sets: 2,
+      reps: '12–15',
+      restSecs: 75,
+      isTimed: false,
+      isUnilateral: false,
+      isMandatory: false,
+      hasKneeWarning: false,
+      defaultWeightKg: 0,
+      notes: 'New movement — Smith bar keeps the path controlled while you learn it. Shoulder blades on bench edge, feet planted hip-width, bar across hips (pad or folded mat for comfort). Drive through heels to full hip extension, squeeze glutes hard for 1–2s at the top — don\'t hyperextend the lower back, the squeeze comes from the glutes. RDL loads the glutes stretched; this loads them at peak contraction — the two together cover the full strength curve. Full hip-extension lockout under load also doubles as deep-core/pelvic-floor bracing work. Moderate volume by design — this is not a mass-building exercise for you. Start: empty Smith bar only for the first 1–2 sessions, technique before load.',
+      alternatives: ['Barbell Hip Thrust'],
+      volumeType: 'weighted',
+      muscleGroups: ['glutes', 'hamstrings'],
+    },
+    {
       name: 'Leg Press — Wide Stance',
       sets: 3,
       reps: '12–15',
@@ -914,7 +929,7 @@ export const LEGS_B: DaySession = {
     },
     {
       name: 'Hip Abduction Machine',
-      sets: 3,
+      sets: 2,
       reps: '20',
       restSecs: 10,
       isTimed: false,
@@ -922,14 +937,14 @@ export const LEGS_B: DaySession = {
       isMandatory: false,
       hasKneeWarning: false,
       defaultWeightKg: 10,
-      notes: 'Superset → go immediately to Hip Adduction Machine (no rest). Same as Wednesday — 2× weekly minimum for WHR improvement. Gluteus medius = hip width. Start: 10 kg.',
+      notes: 'Superset → go immediately to Hip Adduction Machine (no rest). Functional dose for gluteus medius — hip stability and knee tracking, not a growth-focused dose. Start: 10 kg.',
       alternatives: [],
       volumeType: 'weighted',
       muscleGroups: ['glutes'],
     },
     {
       name: 'Hip Adduction Machine',
-      sets: 3,
+      sets: 2,
       reps: '20',
       restSecs: 60,
       isTimed: false,
@@ -937,7 +952,7 @@ export const LEGS_B: DaySession = {
       isMandatory: false,
       hasKneeWarning: false,
       defaultWeightKg: 10,
-      notes: 'Done immediately after Hip Abduction (superset). Inner thigh. 60s rest after completing both. Same as Wednesday — 2× weekly minimum for WHR. Start: 10 kg.',
+      notes: 'Done immediately after Hip Abduction (superset). Inner thigh. 60s rest after completing both. Start: 10 kg.',
       alternatives: [],
       volumeType: 'weighted',
       muscleGroups: ['quads', 'glutes'],
@@ -990,7 +1005,7 @@ export const LEGS_B: DaySession = {
     },
     {
       name: 'Decline Leg Raises',
-      sets: 2,
+      sets: 3,
       reps: '12–15',
       restSecs: 60,
       isTimed: false,
@@ -998,7 +1013,7 @@ export const LEGS_B: DaySession = {
       isMandatory: false,
       hasKneeWarning: false,
       defaultWeightKg: 0,
-      notes: 'Decline bench. Hands under hips. Slow descent — 3s down. No lower back arch at bottom — keep lower back flat against bench. Lower abs + hip flexors. Bodyweight only.',
+      notes: 'Decline bench. Hands under hips. Slow descent — 3s down. No lower back arch at bottom — keep lower back flat against bench. Lower abs + hip flexors. Bodyweight only. 3 sets — the extra set replaces time freed up by lighter hip abduction/adduction volume this session, direct ab work is the higher priority for a visible waist.',
       alternatives: ['Weighted Ab Crunch Machine'],
       volumeType: 'reps_only',
       muscleGroups: ['core'],
@@ -1006,20 +1021,140 @@ export const LEGS_B: DaySession = {
   ],
 }
 
+// ─── Recovery Day (Sunday) ─────────────────────────────────────────────────────
+
+const RECOVERY_WARMUP: WarmupExercise[] = [
+  {
+    name: 'Marching in place + dynamic arm and hip swings',
+    duration: '2 min',
+    durationSecs: 120,
+    joints: 'Full body · Circulation',
+    how: 'March at an easy pace, swinging arms naturally. Add a few hip and shoulder circles as you go. This is light activation, not a full joint-prep protocol — the bike ride that follows does the rest of the warming up.',
+    tip: 'Today is low-intensity by design. Keep this brief and easy.',
+    muscleGroups: ['glutes', 'quads'],
+  },
+]
+
+const RECOVERY_STRETCH: StretchExercise[] = [
+  ...LEGS_STRETCH,
+  ...PUSH_STRETCH.filter(s => [
+    'Chest doorway stretch',
+    'Overhead tricep stretch',
+    'Hip flexor standing stretch — wall support, no kneeling',
+  ].includes(s.name)),
+  ...PULL_STRETCH.filter(s => [
+    'Lat stretch — arm overhead, lean sideways',
+    'Forearm flexor stretch — prayer position, elbows out, press palms together and slightly down',
+    'Forearm extensor stretch — arm extended, use opposite hand to pull fingers down toward you',
+    'Cat-cow — 10 slow reps',
+    'Thread-the-needle thoracic rotation',
+  ].includes(s.name)),
+  { name: 'Seated forward fold', duration: '45s', durationSecs: 45, muscleGroups: ['hamstrings', 'back'] },
+]
+
+export const RECOVERY: DaySession = {
+  dayType: 'recovery',
+  label: 'Recovery',
+  focus: 'Active Recovery — Cardio + Mobility',
+  warmupProtocol: 'recovery',
+  warmupDurationMins: 2,
+  warmup: RECOVERY_WARMUP,
+  stretch: RECOVERY_STRETCH,
+  exercises: [
+    {
+      name: 'Stationary Bike — Cardio',
+      sets: 1,
+      reps: '20 min · moderate, conversational pace',
+      restSecs: 0,
+      isTimed: true,
+      durationSecs: 1200,
+      isUnilateral: false,
+      isMandatory: false,
+      hasKneeWarning: false,
+      defaultWeightKg: 0,
+      notes: 'Moderate pace — 120–130 bpm, conversational, NOT sprinting. Mobilises fat without knee impact and without adding thigh bulk. No HIIT or intervals — patellar tendon precaution.',
+      alternatives: ['Elliptical', 'Treadmill — brisk walk, no running'],
+      volumeType: 'timed',
+      muscleGroups: [],
+    },
+    {
+      name: 'Hip Abduction Machine',
+      sets: 2,
+      reps: '20',
+      restSecs: 10,
+      isTimed: false,
+      isUnilateral: false,
+      isMandatory: false,
+      hasKneeWarning: false,
+      defaultWeightKg: 7.5,
+      notes: 'Superset → go immediately to Hip Adduction Machine. Light — this is a stability/functional top-up, not a growth session. Full ROM.',
+      alternatives: [],
+      volumeType: 'weighted',
+      muscleGroups: ['glutes'],
+    },
+    {
+      name: 'Hip Adduction Machine',
+      sets: 2,
+      reps: '20',
+      restSecs: 60,
+      isTimed: false,
+      isUnilateral: false,
+      isMandatory: false,
+      hasKneeWarning: false,
+      defaultWeightKg: 7.5,
+      notes: 'Done immediately after Hip Abduction (superset). Light. Full ROM — full stretch at open, full squeeze at close.',
+      alternatives: [],
+      volumeType: 'weighted',
+      muscleGroups: ['quads', 'glutes'],
+    },
+    {
+      name: 'Hyperextension — Bodyweight',
+      sets: 2,
+      reps: '15',
+      restSecs: 45,
+      isTimed: false,
+      isUnilateral: false,
+      isMandatory: false,
+      hasKneeWarning: false,
+      defaultWeightKg: 0,
+      notes: 'Hyperextension bench. Bodyweight or arms crossed over chest — no added load. Full hip extension at top, controlled descent. Lower back + glutes — posterior chain recovery work.',
+      alternatives: [],
+      volumeType: 'reps_only',
+      muscleGroups: ['back', 'glutes', 'hamstrings'],
+    },
+    {
+      name: 'Weighted Ab Crunch Machine',
+      sets: 3,
+      reps: '15',
+      restSecs: 60,
+      isTimed: false,
+      isUnilateral: false,
+      isMandatory: false,
+      hasKneeWarning: false,
+      defaultWeightKg: 5,
+      notes: 'Same or slightly lower than weekday weight — this is a light top-up set, not a max-effort session. Full contraction at top, controlled return.',
+      alternatives: [],
+      volumeType: 'weighted',
+      muscleGroups: ['core'],
+    },
+  ],
+}
+
 // ─── Day Map ──────────────────────────────────────────────────────────────────
 
-export const DAY_SESSIONS: Record<string, DaySession> = {
+export const DAY_SESSIONS: Record<DayType, DaySession> = {
   push_a: PUSH_A,
   pull_a: PULL_A,
   legs_a: LEGS_A,
   push_b: PUSH_B,
   pull_b: PULL_B,
   legs_b: LEGS_B,
+  recovery: RECOVERY,
 }
 
-// Maps getDay() (0=Sun…6=Sat) to dayType. 0 = rest.
-export const DAY_OF_WEEK_MAP: Record<number, string> = {
-  0: 'rest',
+// Maps getDay() (0=Sun…6=Sat) to dayType.
+export const DAY_OF_WEEK_MAP: Record<number, DayType> = {
+  0: 'recovery',
   1: 'push_a',
   2: 'pull_a',
   3: 'legs_a',
@@ -1028,7 +1163,7 @@ export const DAY_OF_WEEK_MAP: Record<number, string> = {
   6: 'legs_b',
 }
 
-export const ALL_SESSIONS = [PUSH_A, PULL_A, LEGS_A, PUSH_B, PULL_B, LEGS_B]
+export const ALL_SESSIONS = [PUSH_A, PULL_A, LEGS_A, PUSH_B, PULL_B, LEGS_B, RECOVERY]
 
 // ─── Muscle Group → Day Type Map (for heatmap) ────────────────────────────────
 

@@ -9,6 +9,7 @@ const DAYS: { dayType: DayType; label: string; short: string }[] = [
   { dayType: 'push_b', label: 'Push B', short: 'Thu' },
   { dayType: 'pull_b', label: 'Pull B', short: 'Fri' },
   { dayType: 'legs_b', label: 'Legs B', short: 'Sat' },
+  { dayType: 'recovery', label: 'Recovery', short: 'Sun' },
 ]
 
 const DAY_COLORS: Record<DayType, string> = {
@@ -18,6 +19,7 @@ const DAY_COLORS: Record<DayType, string> = {
   pull_b: '#10B981',
   legs_a: '#F59E0B',
   legs_b: '#F59E0B',
+  recovery: '#8B5CF6',
 }
 
 interface Props {
