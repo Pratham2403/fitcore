@@ -19,7 +19,6 @@ const CALISTHENICS_EXERCISES = [
 const UNILATERAL_EXERCISES = [
   'Single-Arm DB Row',
   'Lateral Lunge (DB)',
-  'Bulgarian Split Squat — DB',
 ]
 
 type Session = { id: string; date: string; total_volume_kg: number | null }

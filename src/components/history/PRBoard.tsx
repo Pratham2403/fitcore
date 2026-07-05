@@ -11,12 +11,15 @@ interface Props {
 }
 
 const MUSCLE_GROUPS: Record<string, string[]> = {
-  'Chest': ['Barbell Bench Press', 'Incline DB Press', 'Cable Fly — Low Cable Cross', 'Pec Deck Fly', 'Incline Barbell Press'],
-  'Back': ['Barbell Bent-Over Row', 'Lat Pulldown — Wide Grip', 'Seated Cable Row — Close Grip', 'T-Bar Row or Chest-Supported DB Row', 'Single-Arm DB Row', 'Face Pulls — Cable Rope'],
-  'Shoulders': ['Overhead Press — Barbell or Smith', 'DB Lateral Raises'],
-  'Arms': ['DB Bicep Curl', 'Hammer Curl', 'Reverse Curl — EZ Bar', 'Tricep Pushdown — Rope'],
+  'Chest': ['DB Flat Bench Press', 'Incline DB Press (30°)', 'Incline DB Press (45°)', 'Pec Deck Fly', 'Cable Fly — Low Cable Cross'],
+  'Shoulders': ['DB Lateral Raises', 'Shoulder Press Machine', 'Rear Delt Fly Machine', 'Cable Face Pulls'],
+  'Back': ['Lat Pulldown — Wide Grip', 'Lat Pulldown — Underhand', 'Seated Cable Row — Close Grip', 'Seated Cable Row — Wide Grip', 'Single-Arm DB Row'],
+  'Arms': ['DB Bicep Curl', 'DB Hammer Curl', 'EZ Bar Reverse Curl', 'Tricep Pushdown — Rope', 'Tricep Pushdown Machine', 'Wrist Curls — Both Directions'],
   'Calisthenics': ['Dip — Assisted Machine', 'Assisted Pull-up — Overhand Wide', 'Assisted Chin-up — Underhand'],
-  'Legs': ['Goblet Squat', 'Leg Press', 'DB Romanian Deadlift', 'Barbell Romanian Deadlift', 'Smith Machine Squat', 'Bulgarian Split Squat — DB', 'Prone Leg Curl'],
+  'Legs': ['Sumo Goblet Squat', 'Leg Press', 'Leg Press — Wide Stance', 'DB Romanian Deadlift', 'Smith Machine Hip Thrust', 'Leg Extension — PARTIAL 0 to 90° ONLY', 'Lateral Lunge (DB)', 'Hip Abduction Machine', 'Hip Adduction Machine'],
+  'Calves': ['Seated Calf Raises', 'Smith Machine Calf Raises'],
+  'Core': ['Weighted Ab Crunch Machine', 'Kegels', 'Decline Leg Raises', 'Hyperextension — Bodyweight'],
+  'Cardio': ['Stationary Bike — Cardio'],
 }
 
 export default function PRBoard({ prs }: Props) {
