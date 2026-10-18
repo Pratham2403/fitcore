@@ -8,9 +8,11 @@ interface Props {
   size?: number
   strokeWidth?: number
   color?: string
+  /** Render the remaining time inside the ring. */
+  showLabel?: boolean
 }
 
-export default function TimerRing({ remaining, total, size = 96, strokeWidth = 6, color = 'var(--accent-emerald)' }: Props) {
+export default function TimerRing({ remaining, total, size = 96, strokeWidth = 6, color = 'var(--accent-emerald)', showLabel = true }: Props) {
   const radius = (size - strokeWidth) / 2
   const circumference = 2 * Math.PI * radius
   const progress = total > 0 ? Math.max(0, Math.min(1, remaining / total)) : 0
@@ -42,12 +44,12 @@ export default function TimerRing({ remaining, total, size = 96, strokeWidth = 6
           style={{ transition: 'stroke-dashoffset 0.1s linear' }}
         />
       </svg>
-      <span
+      {showLabel && <span
         className="absolute font-mono text-lg font-semibold font-mono-nums"
         style={{ color: 'var(--text-primary)' }}
       >
         {formatTime(Math.ceil(remaining))}
-      </span>
+      </span>}
     </div>
   )
 }

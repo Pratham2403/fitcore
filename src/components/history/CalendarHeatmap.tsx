@@ -1,20 +1,24 @@
 'use client'
 
-type Session = { date: string; day_type: string; status: string }
+import type { Protocol } from '@/types'
+import { toISODate } from '@/lib/utils'
+
+type Session = { date: string; protocol: Protocol | null; workout_name: string | null; status: string | null }
 
 interface Props {
   sessions: Session[]
 }
 
-const DAY_COLORS: Record<string, string> = {
-  push_a: '#3B82F6',
-  push_b: '#3B82F6',
-  pull_a: '#10B981',
-  pull_b: '#10B981',
-  legs_a: '#F59E0B',
-  legs_b: '#F59E0B',
+const PROTOCOL_COLORS: Record<Protocol, string> = {
+  push: '#3B82F6',
+  pull: '#10B981',
+  legs: '#F59E0B',
   recovery: '#8B5CF6',
+  full_body: '#EC4899',
 }
+
+/** Sessions whose workout was since deleted. */
+const UNKNOWN_PROTOCOL_COLOR = '#6B7280'
 
 export default function CalendarHeatmap({ sessions }: Props) {
   const sessionMap = new Map(sessions.filter(s => s.status === 'completed').map(s => [s.date, s]))
@@ -53,16 +57,16 @@ export default function CalendarHeatmap({ sessions }: Props) {
         {weeks.map((week, wi) => (
           <div key={wi} className="flex flex-col gap-1">
             {week.map((day, di) => {
-              const dateStr = day.toISOString().split('T')[0]
+              const dateStr = toISODate(day)
               const session = sessionMap.get(dateStr)
               const isFuture = day > today
-              const color = session ? (DAY_COLORS[session.day_type] ?? '#10B981') : null
+              const color = session ? (session.protocol ? PROTOCOL_COLORS[session.protocol] : UNKNOWN_PROTOCOL_COLOR) : null
 
               return (
                 <div
                   key={di}
                   className="w-5 h-5 rounded-sm"
-                  title={dateStr + (session ? ` · ${session.day_type}` : '')}
+                  title={dateStr + (session ? ` · ${session.workout_name ?? 'Workout'}` : '')}
                   style={{
                     background: isFuture ? 'transparent' : color ?? 'var(--bg-elevated)',
                     opacity: isFuture ? 0.3 : 1,

@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import Button from '@/components/ui/Button'
 import type { ReadinessCheckIn } from '@/types'
 
 interface Props {
-  onComplete: (data: ReadinessCheckIn) => void
-  onSkip: () => void
+  onComplete: (data: ReadinessCheckIn) => Promise<void>
+  onSkip: () => Promise<void>
 }
 
 const METRICS = [
@@ -25,13 +26,19 @@ export default function ReadinessCheckIn({ onComplete, onSkip }: Props) {
   const [ratings, setRatings] = useState<Record<string, 1 | 2 | 3>>({
     sleep: 2, energy: 2, soreness: 2, protein: 2,
   })
+  const [pendingAction, setPendingAction] = useState<'start' | 'skip' | null>(null)
+
+  function begin(action: 'start' | 'skip', startSession: () => Promise<void>) {
+    setPendingAction(action)
+    startSession().finally(() => setPendingAction(null))
+  }
 
   function setRating(key: string, val: 1 | 2 | 3) {
     setRatings(r => ({ ...r, [key]: val }))
   }
 
-  function handleSubmit() {
-    onComplete({
+  function submitReadiness() {
+    return onComplete({
       sleep: ratings.sleep,
       energy: ratings.energy,
       soreness: ratings.soreness,
@@ -90,20 +97,12 @@ export default function ReadinessCheckIn({ onComplete, onSkip }: Props) {
       )}
 
       <div className="flex gap-3 mt-4">
-        <button
-          onClick={onSkip}
-          className="flex-1 py-2.5 rounded-xl text-sm"
-          style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
-        >
+        <Button variant="secondary" className="flex-1" isLoading={pendingAction === 'skip'} disabled={pendingAction !== null} onClick={() => begin('skip', onSkip)}>
           Skip
-        </button>
-        <button
-          onClick={handleSubmit}
-          className="flex-1 py-2.5 rounded-xl text-sm font-semibold"
-          style={{ background: 'var(--accent-emerald)', color: '#fff' }}
-        >
+        </Button>
+        <Button className="flex-1" isLoading={pendingAction === 'start'} disabled={pendingAction !== null} onClick={() => begin('start', submitReadiness)}>
           Let&apos;s go →
-        </button>
+        </Button>
       </div>
     </div>
   )

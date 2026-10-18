@@ -2,23 +2,37 @@
 
 import { useState } from 'react'
 import SetRow from '@/components/workout/SetRow'
-import RestTimer from '@/components/workout/RestTimer'
+import TimedSetRow from '@/components/workout/TimedSetRow'
+import { rowCountOf, setNumberOfRow, sideOfRow } from '@/components/workout/setRows'
 import EquipmentSwapSheet from '@/components/workout/EquipmentSwapSheet'
+import ConstraintWarningList from '@/components/workout/ConstraintWarningList'
+import { Chip } from '@/components/ui/Chip'
+import { ShieldIcon } from '@/components/ui/Icon'
+import { useToast } from '@/components/ui/Toast'
 import { formatRestSecs } from '@/lib/utils'
 import { getPlateauSuggestion } from '@/lib/analytics/plateau'
-import type { Exercise, SetLog, LastSessionData } from '@/types'
+import type { Exercise, ExerciseAlternative, LastSessionData, LoggingMode } from '@/types'
+import type { SetLogInput } from '@/lib/workout/schema'
+import { resumedAlternative, type LoggedRow } from '@/lib/workout/resume'
 
 interface Props {
   exercise: Exercise
-  sessionId: string
+  /** The plan exercise's last session; not shown while an alternative is swapped in. */
   lastSession: LastSessionData | null
-  onSetLogged: (log: Omit<SetLog, 'id' | 'logged_at'>) => Promise<{ isPR: boolean }>
-  nextExerciseName?: string
-  initialLoggedRows?: number[]
+  /** Persists a set; rejects when it could not be saved. */
+  onSetLogged: (log: SetLogInput) => Promise<{ isPR: boolean }>
+  /** Called the moment a set is logged so the page can start its rest timer; receives the card's logged rows. */
+  onRestStart: (restSecs: number, loggedRows: readonly LoggedRow[]) => void
+  /** Rows already saved this session, in logging order (when resuming); a latest row logged under an alternative restores that swap. */
+  initialLoggedRows?: LoggedRow[]
   currentBodyweight: number
 }
 
+type SetValues = Pick<LoggedRow, 'reps' | 'weightKg' | 'durationSecs'>
+
 const REST_PRESETS = [30, 45, 60, 75, 90, 120, 150, 180, 210, 240]
+/** Hold target for a timed alternative swapped in for an untimed exercise, which has no hold length of its own. */
+const DEFAULT_HOLD_SECS = 30
 
 function parseDefaultReps(reps: string): number {
   if (reps === 'AMRAP') return 0
@@ -31,29 +45,33 @@ function suggestWeight(lastWeight: number): number {
 }
 
 export default function ExerciseCard({
-  exercise, sessionId, lastSession, onSetLogged, nextExerciseName, initialLoggedRows = [], currentBodyweight,
+  exercise, lastSession: planLastSession, onSetLogged, onRestStart, initialLoggedRows = [], currentBodyweight,
 }: Props) {
-  const totalSets = exercise.sets * (exercise.isUnilateral ? 2 : 1)
-  const [loggedSets, setLoggedSets] = useState<Set<number>>(new Set(initialLoggedRows))
-  const [prSets, setPrSets] = useState<Set<number>>(new Set())
-  const [restOpen, setRestOpen] = useState(false)
-  const [restKey, setRestKey] = useState(0)
+  const showToast = useToast()
+  const [loggedRows, setLoggedRows] = useState<LoggedRow[]>(initialLoggedRows)
   const [restSecs, setRestSecs] = useState(exercise.restSecs)
   const [showRestPicker, setShowRestPicker] = useState(false)
   const [swapOpen, setSwapOpen] = useState(false)
-  const [swappedName, setSwappedName] = useState<string | null>(null)
+  const [swapped, setSwapped] = useState<ExerciseAlternative | undefined>(
+    () => resumedAlternative(exercise.alternatives, initialLoggedRows))
 
-  const displayName = swappedName ?? exercise.name
-  const defaultReps = parseDefaultReps(exercise.reps)
-  const defaultWeight = lastSession?.avgWeight ??
-    (exercise.volumeType === 'bodyweight_full' ? currentBodyweight : exercise.defaultWeightKg)
+  const isSwapped = swapped !== undefined
+  const activeMode: LoggingMode = swapped ?? exercise
+  const activeExerciseId = swapped?.id ?? exercise.exerciseId
+  const displayName = swapped?.name ?? exercise.name
+  const lastSession = isSwapped ? null : planLastSession
+  const modeOf = (catalogId: string): LoggingMode => exercise.alternatives.find(alt => alt.id === catalogId) ?? exercise
+  const lastActiveRow = loggedRows.filter(row => row.exerciseId === activeExerciseId).at(-1)
+  const defaultReps = lastActiveRow?.reps ?? parseDefaultReps(exercise.reps)
+  const startingWeight = isSwapped ? 0 : exercise.defaultWeightKg
+  const defaultWeight = lastActiveRow?.weightKg ?? lastSession?.avgWeight ??
+    (activeMode.volumeType === 'bodyweight_full' ? currentBodyweight : startingWeight)
   const isAmrap = exercise.reps === 'AMRAP'
-  const isSwapped = swappedName !== null
-  const allLogged = loggedSets.size >= totalSets
-  const sideLabels = exercise.isUnilateral ? ['left', 'right'] : [null]
+  const allLogged = loggedRows.length >= rowCountOf(exercise)
+  const holdSecs = exercise.isTimed ? exercise.durationSecs ?? parseDefaultReps(exercise.reps) : DEFAULT_HOLD_SECS
 
   const plateauSuggestion = (!isAmrap && lastSession?.isPlateaued)
-    ? getPlateauSuggestion(lastSession.avgWeight, exercise.alternatives)
+    ? getPlateauSuggestion(lastSession.avgWeight, exercise.alternatives.map(alt => alt.name))
     : null
 
   // Calisthenics progression check: all sets ≥ 8 reps → suggest reducing assistance
@@ -62,25 +80,32 @@ export default function ExerciseCard({
     lastSession.perSetReps.length >= exercise.sets &&
     lastSession.perSetReps.every(s => s.reps >= 8)
 
-  async function handleLog(rowIdx: number, reps: number, weight: number, rpe: 1 | 2 | 3) {
-    if (loggedSets.has(rowIdx)) return
-    const side = exercise.isUnilateral ? (rowIdx % 2 === 0 ? 'left' : 'right') : null
-    const result = await onSetLogged({
-      session_id: sessionId,
-      exercise_name: displayName,
-      set_number: Math.floor(rowIdx / (exercise.isUnilateral ? 2 : 1)) + 1,
-      reps,
-      weight_kg: weight,
-      is_timed: exercise.isTimed,
-      duration_secs: exercise.isTimed ? exercise.durationSecs : undefined,
-      rpe,
-      is_pr: false,
-      side,
-    })
-    setLoggedSets(prev => new Set(Array.from(prev).concat(rowIdx)))
-    if (result.isPR) setPrSets(prev => new Set(Array.from(prev).concat(rowIdx)))
-    setRestKey(k => k + 1)
-    setRestOpen(true)
+  // Optimistic: the row reads as logged and rest starts on tap; a failed save rolls the row back
+  async function handleLog(rowIdx: number, values: SetValues, rpe?: 1 | 2 | 3) {
+    if (loggedRows.some(row => row.rowIndex === rowIdx)) return
+    const setNumber = setNumberOfRow(rowIdx, exercise.isUnilateral)
+    const nextLoggedRows = [...loggedRows, { rowIndex: rowIdx, exerciseId: activeExerciseId, ...values, isPR: false }]
+    setLoggedRows(nextLoggedRows)
+    onRestStart(restSecs, nextLoggedRows)
+    try {
+      const { isPR } = await onSetLogged({
+        exercise_name: displayName,
+        exercise_id: activeExerciseId,
+        block_type: 'working',
+        set_number: setNumber,
+        reps: values.reps,
+        weight_kg: values.weightKg,
+        is_timed: activeMode.isTimed,
+        volume_type: activeMode.volumeType,
+        duration_secs: values.durationSecs,
+        rpe,
+        side: sideOfRow(rowIdx, exercise.isUnilateral),
+      })
+      if (isPR) setLoggedRows(prev => prev.map(row => (row.rowIndex === rowIdx ? { ...row, isPR } : row)))
+    } catch {
+      setLoggedRows(prev => prev.filter(row => row.rowIndex !== rowIdx))
+      showToast(`${displayName} set ${setNumber} wasn’t saved — tap Log to retry.`, 'error')
+    }
   }
 
   return (
@@ -96,21 +121,16 @@ export default function ExerciseCard({
       }}
     >
       <div className="px-4 pt-4 pb-3">
-        {/* Knee warning */}
-        {exercise.hasKneeWarning && (
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl mb-3"
-            style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.4)' }}>
-            <span className="text-xs font-semibold" style={{ color: 'var(--destructive)' }}>
-              ⚠ Stop at 90° — Knee Protocol
-            </span>
+        {/* Constraint warnings — cap_rom is a hard, non-dismissable limit */}
+        {exercise.warnings.length > 0 && (
+          <div className="mb-3">
+            <ConstraintWarningList warnings={exercise.warnings} />
           </div>
         )}
 
-        {/* Mandatory badge */}
         {exercise.isMandatory && (
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold mb-3"
-            style={{ background: 'rgba(59,130,246,0.15)', color: 'var(--accent-blue)', border: '1px solid rgba(59,130,246,0.3)' }}>
-            🔒 Pelvic Floor — Mandatory
+          <div className="mb-3">
+            <Chip tone="accent" icon={<ShieldIcon size={14} />}>Mandatory — don’t skip</Chip>
           </div>
         )}
 
@@ -121,7 +141,7 @@ export default function ExerciseCard({
             <span className="text-xs font-medium" style={{ color: 'var(--accent-orange)' }}>
               ↕ Alternative for {exercise.name}
             </span>
-            <button onClick={() => setSwappedName(null)} className="text-xs font-semibold ml-3"
+            <button onClick={() => setSwapped(undefined)} className="text-xs font-semibold ml-3"
               style={{ color: 'var(--accent-orange)' }}>
               Revert ↩
             </button>
@@ -135,7 +155,7 @@ export default function ExerciseCard({
             </h3>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                {exercise.sets}×{exercise.reps}
+                {exercise.sets}×{activeMode.isTimed ? `${holdSecs}s` : exercise.reps}
               </span>
               {/* Tappable rest duration — opens preset picker */}
               <button
@@ -199,7 +219,7 @@ export default function ExerciseCard({
               </p>
             )}
           </div>
-        ) : !isAmrap && lastSession ? (
+        ) : !isAmrap && !activeMode.isTimed && lastSession ? (
           lastSession.isPlateaued ? (
             /* Plateau suggestion */
             <div className="mt-2 px-3 py-2 rounded-xl text-xs"
@@ -232,35 +252,35 @@ export default function ExerciseCard({
 
       {/* Set rows */}
       <div className="px-4 pb-4 space-y-2">
-        {Array.from({ length: exercise.sets }, (_, setIdx) =>
-          sideLabels.map((side, sideIdx) => {
-            const rowIdx = setIdx * sideLabels.length + sideIdx
-            return (
-              <SetRow
-                key={`${setIdx}-${side ?? 'bilateral'}`}
-                setNumber={setIdx + 1}
-                defaultReps={defaultReps}
-                defaultWeight={defaultWeight}
-                isLogged={loggedSets.has(rowIdx)}
-                isPR={prSets.has(rowIdx)}
-                side={side as 'left' | 'right' | null}
-                isTimed={exercise.isTimed}
-                durationSecs={exercise.durationSecs}
-                onLog={(reps, weight, rpe) => handleLog(rowIdx, reps, weight, rpe)}
-              />
-            )
-          })
-        )}
+        {Array.from({ length: rowCountOf(exercise) }, (_, rowIdx) => {
+          const setNumber = setNumberOfRow(rowIdx, exercise.isUnilateral)
+          const side = sideOfRow(rowIdx, exercise.isUnilateral)
+          const loggedRow = loggedRows.find(row => row.rowIndex === rowIdx)
+          const key = `${setNumber}-${side ?? 'bilateral'}`
+          const rowMode = loggedRow ? modeOf(loggedRow.exerciseId) : activeMode
+          return rowMode.isTimed ? (
+            <TimedSetRow
+              key={key}
+              setNumber={setNumber}
+              holdSecs={holdSecs}
+              loggedRow={loggedRow}
+              side={side}
+              onLog={heldSecs => handleLog(rowIdx, { durationSecs: heldSecs })}
+            />
+          ) : (
+            <SetRow
+              key={key}
+              setNumber={setNumber}
+              defaultReps={defaultReps}
+              defaultWeight={defaultWeight}
+              tracksWeight={rowMode.volumeType !== 'reps_only'}
+              loggedRow={loggedRow}
+              side={side}
+              onLog={(reps, weight, rpe) => handleLog(rowIdx, { reps, weightKg: weight }, rpe)}
+            />
+          )
+        })}
       </div>
-
-      {/* Rest timer */}
-      <RestTimer
-        key={restKey}
-        open={restOpen}
-        onClose={() => setRestOpen(false)}
-        restSecs={restSecs}
-        nextExerciseName={nextExerciseName}
-      />
 
       {/* Equipment swap */}
       <EquipmentSwapSheet
@@ -268,8 +288,8 @@ export default function ExerciseCard({
         onClose={() => setSwapOpen(false)}
         exerciseName={exercise.name}
         alternatives={exercise.alternatives}
-        onSwap={name => { setSwappedName(name); setSwapOpen(false) }}
-        currentSwap={swappedName}
+        onSwap={alternative => { setSwapped(alternative); setSwapOpen(false) }}
+        currentSwapId={swapped?.id ?? null}
       />
     </div>
   )

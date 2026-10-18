@@ -1,66 +1,50 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getOptionalUserId } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
 import QuoteCard from '@/components/home/QuoteCard'
 import StreakBadge from '@/components/home/StreakBadge'
 import WellnessScore from '@/components/home/WellnessScore'
 import MuscleHeatmap from '@/components/home/MuscleHeatmap'
-import { getGreeting, getTodayDayType, getDayLabel, toISODate, getWeekStart, getLastWeekStart } from '@/lib/utils'
+import { getGreeting, toISODate, getWeekStart, getLastWeekStart } from '@/lib/utils'
 import DeloadAlert from '@/components/home/DeloadAlert'
 import { computeACWR } from '@/lib/analytics/acwr'
+import { getWeeklyProgram } from '@/lib/program/actions'
+import { getHomeDashboard } from '@/lib/home/dashboard'
+import TodayCard from '@/components/home/TodayCard'
 
 export const dynamic = 'force-dynamic'
 
+const ACWR_WINDOW_DAYS = 28
+const MS_PER_DAY = 86_400_000
+
 export default async function HomePage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const userId = await getOptionalUserId(supabase)
+  if (!userId) redirect('/login')
 
-  const today = toISODate()
-  const weekStart = getWeekStart()
-  const lastWeekStart = getLastWeekStart()
-  const dayType = getTodayDayType()
-  const fourWeeksAgo = toISODate(new Date(Date.now() - 28 * 86400000))
-
-  const [
-    { data: streakData },
-    { data: todaySession },
-    { data: weekSessions },
-    { data: latestWeight },
-    { data: lastWeekSessions },
-    { data: latestPR },
-    { data: fourWeekSessions },
-  ] = await Promise.all([
-    supabase.from('streaks').select('*').single(),
-    supabase.from('workout_sessions').select('*').eq('date', today).order('created_at', { ascending: false }).limit(1).single(),
-    supabase.from('workout_sessions').select('day_type, total_volume_kg').gte('date', weekStart).eq('status', 'completed'),
-    supabase.from('body_metrics').select('weight_kg').order('date', { ascending: false }).limit(1).single(),
-    supabase.from('workout_sessions').select('total_volume_kg').gte('date', lastWeekStart).lt('date', weekStart).eq('status', 'completed'),
-    supabase.from('personal_records').select('exercise_name, value, set_on').eq('record_type', 'max_weight').order('set_on', { ascending: false }).limit(1).single(),
-    supabase.from('workout_sessions').select('date, total_volume_kg').gte('date', fourWeeksAgo).eq('status', 'completed'),
+  const [dashboard, program] = await Promise.all([
+    getHomeDashboard(supabase, userId, {
+      today: toISODate(),
+      weekStart: getWeekStart(),
+      lastWeekStart: getLastWeekStart(),
+      fourWeeksAgo: toISODate(new Date(Date.now() - ACWR_WINDOW_DAYS * MS_PER_DAY)),
+    }),
+    getWeeklyProgram(),
   ])
-
-  const streak = streakData ?? { current_streak: 0, longest_streak: 0, total_sessions: 0 }
-  const weekCount = weekSessions?.length ?? 0
-  const currentWeight = latestWeight?.weight_kg ?? null
-  const wellnessScore = (todaySession as { wellness_score?: number } | null)?.wellness_score ?? null
-  const trainedThisWeek = (weekSessions ?? []).map((s: { day_type: string }) => s.day_type)
-
-  const thisWeekVol = (weekSessions ?? []).reduce((sum, s) => sum + ((s as { total_volume_kg?: number }).total_volume_kg ?? 0), 0)
-  const lastWeekVol = (lastWeekSessions ?? []).reduce((sum, s) => sum + ((s as { total_volume_kg?: number }).total_volume_kg ?? 0), 0)
+  const {
+    profileName, streak, weekCount, currentWeightKg: currentWeight, wellnessScore, sessionsPerMuscle,
+    thisWeekVolumeKg: thisWeekVol, lastWeekVolumeKg: lastWeekVol, latestPR,
+  } = dashboard
   const volDelta = lastWeekVol > 0 ? Math.round(((thisWeekVol - lastWeekVol) / lastWeekVol) * 100) : null
-
-  const acwrResult = computeACWR((fourWeekSessions ?? []) as { date: string; total_volume_kg: number | null }[])
+  const acwrResult = computeACWR(dashboard.recentSessions)
 
   const greeting = getGreeting()
-  const sessionLabel = getDayLabel(dayType)
 
   return (
     <div className="px-4 pt-6 pb-4 max-w-lg mx-auto space-y-4">
       {/* Greeting */}
       <div>
         <h1 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
-          {greeting}, Pratham
+          {greeting}{profileName ? `, ${profileName}` : ''}
         </h1>
         <p className="text-sm mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
           {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -70,27 +54,12 @@ export default async function HomePage() {
       {/* Quote */}
       <QuoteCard />
 
-      {/* Today's workout CTA */}
-      <div className="rounded-2xl p-4" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-xs font-medium mb-0.5" style={{ color: 'var(--text-tertiary)' }}>TODAY</p>
-            <p className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>{sessionLabel}</p>
-          </div>
-          <Link
-            href="/workout"
-            className="px-4 py-2 rounded-xl text-sm font-semibold"
-            style={{ background: 'var(--accent-emerald)', color: '#fff' }}
-          >
-            Start
-          </Link>
-        </div>
-      </div>
+      <TodayCard program={program} />
 
       {/* Streak row */}
       <StreakBadge
-        current={streak.current_streak ?? 0}
-        longest={streak.longest_streak ?? 0}
+        current={streak.current}
+        longest={streak.longest}
         weekCount={weekCount}
       />
 
@@ -136,13 +105,13 @@ export default async function HomePage() {
         </div>
         <div className="rounded-2xl p-3 text-center" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
           <p className="text-lg font-mono font-semibold" style={{ color: 'var(--text-primary)' }}>
-            {streak.total_sessions ?? 0}
+            {streak.totalSessions}
           </p>
           <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>sessions</p>
         </div>
         <div className="rounded-2xl p-3 text-center" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
           <p className="text-lg font-mono font-semibold" style={{ color: 'var(--text-primary)' }}>
-            {streak.current_streak ?? 0}
+            {streak.current}
           </p>
           <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>day streak</p>
         </div>
@@ -160,14 +129,14 @@ export default async function HomePage() {
           </p>
           <div className="flex items-baseline justify-between">
             <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-              {(latestPR as { exercise_name: string }).exercise_name}
+              {latestPR.exerciseName}
             </p>
             <p className="text-sm font-mono font-semibold" style={{ color: 'var(--accent-emerald)' }}>
-              {(latestPR as { value: number }).value}kg
+              {latestPR.value}kg
             </p>
           </div>
           <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-            {new Date((latestPR as { set_on: string }).set_on).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+            {new Date(latestPR.setOn).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
           </p>
         </div>
       )}
@@ -182,7 +151,7 @@ export default async function HomePage() {
       )}
 
       {/* Muscle heatmap */}
-      <MuscleHeatmap trainedDayTypes={trainedThisWeek} />
+      <MuscleHeatmap sessionsPerMuscle={sessionsPerMuscle} />
     </div>
   )
 }

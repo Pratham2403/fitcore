@@ -1,60 +1,44 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
+import { useState } from 'react'
+import { motion, useReducedMotion } from 'framer-motion'
+import { DURATION, EASE, SPRING } from '@/components/ui/motion'
 
-interface Props {
-  show: boolean
-}
+const SPARK_COLORS = ['#F59E0B', '#10B981', '#3B82F6', '#EF4444', '#22C55E']
+const SPARK_COUNT = 10
+const SPARK_DISTANCE_PX = 28
+const SPARK_SIZE_PX = 5
 
-export default function PRBadge({ show }: Props) {
-  const [visible, setVisible] = useState(false)
-  const [particles, setParticles] = useState<{ x: number; y: number; color: string; size: number }[]>([])
-
-  useEffect(() => {
-    if (show) {
-      setVisible(true)
-      setParticles(Array.from({ length: 18 }, () => ({
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-        color: ['#F59E0B', '#10B981', '#3B82F6', '#EF4444', '#22C55E'][Math.floor(Math.random() * 5)],
-        size: 4 + Math.random() * 6,
-      })))
-      const t = setTimeout(() => setVisible(false), 3000)
-      return () => clearTimeout(t)
-    }
-  }, [show])
-
-  if (!visible) return null
+/** Persistent "New PR" badge that announces itself once with a short spark burst. */
+export default function PRBadge() {
+  const isReducedMotion = useReducedMotion()
+  // Angles are fixed at mount so re-renders never re-randomise the burst
+  const [sparkAngles] = useState(() =>
+    Array.from({ length: SPARK_COUNT }, (_, i) => (i / SPARK_COUNT) * 2 * Math.PI + Math.random() * 0.4),
+  )
 
   return (
-    <div className="relative">
-      {/* Confetti particles */}
-      {particles.map((p, i) => (
-        <div
+    <span className="relative grid min-h-11 place-items-center flex-shrink-0">
+      {!isReducedMotion && sparkAngles.map((angle, i) => (
+        <motion.span
           key={i}
-          className="absolute rounded-sm pointer-events-none animate-bounce"
-          style={{
-            left: `${p.x}%`,
-            top: `${p.y}%`,
-            width: p.size,
-            height: p.size,
-            background: p.color,
-            animationDuration: `${0.5 + Math.random() * 0.5}s`,
-            animationDelay: `${Math.random() * 0.3}s`,
-          }}
+          aria-hidden
+          className="pointer-events-none absolute rounded-sm"
+          style={{ width: SPARK_SIZE_PX, height: SPARK_SIZE_PX, background: SPARK_COLORS[i % SPARK_COLORS.length] }}
+          initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+          animate={{ x: Math.cos(angle) * SPARK_DISTANCE_PX, y: Math.sin(angle) * SPARK_DISTANCE_PX, opacity: 0, scale: 0.5 }}
+          transition={{ duration: DURATION.illustrative, ease: EASE.outExpo }}
         />
       ))}
-      {/* Badge */}
       <motion.span
-        initial={{ scale: 0, opacity: 0 }}
+        initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 18 }}
-        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold"
+        transition={SPRING.snappy}
+        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap"
         style={{ background: '#F59E0B', color: '#000' }}
       >
-        ★ New PR
+        ★ PR
       </motion.span>
-    </div>
+    </span>
   )
 }

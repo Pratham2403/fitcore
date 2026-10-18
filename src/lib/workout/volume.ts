@@ -8,10 +8,11 @@ export function calculateTotalVolume(sets: SetLog[]): number {
   }, 0)
 }
 
-/** Total reps across exercises classified as reps_only (e.g. Lying Leg Raises, Russian Twists). */
+/** Total reps of sets logged as reps_only (e.g. Lying Leg Raises, Russian Twists), including swapped-in alternatives. */
 export function calculateCoreReps(sets: SetLog[], exercises: Exercise[]): number {
   return sets.reduce((sum, s) => {
-    const ex = exercises.find(e => e.name === s.exercise_name)
-    return sum + (ex?.volumeType === 'reps_only' ? (s.reps ?? 0) : 0)
+    const loggedAs = exercises.find(e => e.exerciseId === s.exercise_id || e.name === s.exercise_name)
+      ?? exercises.flatMap(e => e.alternatives).find(alternative => alternative.id === s.exercise_id)
+    return sum + (loggedAs?.volumeType === 'reps_only' ? (s.reps ?? 0) : 0)
   }, 0)
 }

@@ -1,5 +1,10 @@
 'use client'
 
+import { motion } from 'framer-motion'
+import { DURATION, EASE } from '@/components/ui/motion'
+
+const CARD_ENTER = { duration: DURATION.medium, ease: EASE.outQuart }
+
 interface Props {
   dayLabel: string
   durationMin: number
@@ -15,10 +20,12 @@ export default function SessionSummary({
   dayLabel, durationMin, totalVolume, prCount, wellnessScore, streakCount, coreReps, onClose,
 }: Props) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      style={{ background: 'rgba(15,15,15,0.96)' }}>
-      <div className="w-full max-w-sm rounded-3xl p-6 space-y-4"
-        style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+    <motion.div className="fixed inset-0 z-[55] flex items-center justify-center px-4"
+      style={{ background: 'rgba(15,15,15,0.96)' }}
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={CARD_ENTER}>
+      <motion.div className="w-full max-w-sm rounded-3xl p-6 space-y-4"
+        style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+        initial={{ opacity: 0, scale: 0.95, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={CARD_ENTER}>
 
         <div className="text-center">
           <div className="text-4xl mb-3">🏆</div>
@@ -53,8 +60,8 @@ export default function SessionSummary({
         >
           Done
         </button>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }
 

@@ -16,6 +16,26 @@
   --accent-orange: #F59E0B;
   --accent-green: #22C55E;
   --destructive: #EF4444;
+
+  --accent-emerald-strong: #34D399;
+  --accent-emerald-soft: rgba(16, 185, 129, 0.12);
+  --accent-emerald-line: rgba(16, 185, 129, 0.35);
+  --on-accent: #04130D;
+  --destructive-soft: rgba(239, 68, 68, 0.12);
+  --focus-ring: #6EE7B7;
+  --overlay: rgba(0, 0, 0, 0.6);
+
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+
+  --dur-1: 120ms;
+  --dur-2: 180ms;
+  --dur-3: 240ms;
+  --dur-4: 300ms;
+  --ease-out-quart: cubic-bezier(.165, .84, .44, 1);
+  --ease-out-expo: cubic-bezier(.19, 1, .22, 1);
+  --ease-in-out-cubic: cubic-bezier(.645, .045, .355, 1);
 }
 
 * {
@@ -75,7 +95,36 @@ input[inputmode="decimal"]::-webkit-inner-spin-button {
   border-radius: 2px;
 }
 
+/* Visible keyboard focus everywhere; mouse/touch users never see it */
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes skeleton-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
 @layer utilities {
+  .skeleton {
+    background: linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-elevated) 50%, var(--bg-surface) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.4s linear infinite;
+  }
   .text-balance {
     text-wrap: balance;
   }

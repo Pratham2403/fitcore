@@ -1,8 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { getDayLabel } from '@/lib/utils'
-import type { DayType } from '@/types'
 
 const WORKOUT_MOOD: Record<number, string> = { 1: '😊 Smooth', 2: '💪 Solid', 3: '🔥 Brutal' }
 const ENERGY_MOOD: Record<number, string> = { 1: '🪫 Drained', 2: '😐 Fine', 3: '⚡ Energized' }
@@ -10,24 +8,19 @@ const ENERGY_MOOD: Record<number, string> = { 1: '🪫 Drained', 2: '😐 Fine',
 type Session = {
   id: string
   date: string
-  day_type: string
-  status: string
-  duration_min?: number
-  total_volume_kg?: number
-  wellness_score?: number
-  post_mood_workout?: number
-  post_mood_energy?: number
+  day_type: string | null
+  workout_name: string | null
+  /** Protocol of the session's workout template, when it still exists. */
+  protocol: string | null
+  status: string | null
+  duration_min: number | null
+  total_volume_kg: number | null
+  wellness_score: number | null
+  post_mood_workout: number | null
+  post_mood_energy: number | null
 }
 
 type FilterGroup = 'all' | 'push' | 'pull' | 'legs' | 'recovery'
-
-const FILTER_MAP: Record<FilterGroup, string[]> = {
-  all: [],
-  push: ['push_a', 'push_b'],
-  pull: ['pull_a', 'pull_b'],
-  legs: ['legs_a', 'legs_b'],
-  recovery: ['recovery'],
-}
 
 const FILTER_CHIPS: { key: FilterGroup; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -48,7 +41,7 @@ export default function SessionList({ sessions }: Props) {
   const completed = sessions.filter(s => s.status === 'completed')
   const filtered = filter === 'all'
     ? completed
-    : completed.filter(s => FILTER_MAP[filter].includes(s.day_type))
+    : completed.filter(s => s.protocol === filter)
 
   return (
     <div className="space-y-3">
@@ -87,7 +80,7 @@ export default function SessionList({ sessions }: Props) {
               >
                 <div>
                   <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                    {getDayLabel(s.day_type as DayType)}
+                    {s.workout_name ?? 'Workout'}
                   </p>
                   <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
                     {new Date(s.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}

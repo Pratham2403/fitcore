@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { FALLBACK_QUOTES } from '@/lib/workoutData'
+import { FALLBACK_QUOTES } from '@/lib/quotes'
 import type { Quote } from '@/types'
 
 const QUOTE_API = 'https://motivational-spark-api.vercel.app/api/quotes/random'
