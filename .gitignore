@@ -38,3 +38,9 @@ next-env.d.ts
 #documentation
 /docs
 CLAUDE.md
+
+# manual pre-migration data backup (contains real personal training data)
+/backups
+
+# real secrets
+.env

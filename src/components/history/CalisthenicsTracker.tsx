@@ -2,24 +2,17 @@
 
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
-interface DataPoint {
-  date: string
-  dip?: number
-  pullup?: number
-  chinup?: number
-}
+import type { CalisthenicsPoint } from '@/lib/analytics/calisthenics'
 
 interface Props {
-  data: DataPoint[]
+  data: CalisthenicsPoint[]
+  /** One line per assisted exercise; `key` matches the data point field. */
+  series: Array<{ key: string; label: string }>
 }
 
-const LINES = [
-  { key: 'dip' as const, label: 'Dip', color: '#F97316' },
-  { key: 'pullup' as const, label: 'Pull-up', color: '#3B82F6' },
-  { key: 'chinup' as const, label: 'Chin-up', color: '#10B981' },
-]
+const LINE_COLORS = ['#F97316', '#3B82F6', '#10B981', '#A855F7', '#EAB308']
 
-export default function CalisthenicsTracker({ data }: Props) {
+export default function CalisthenicsTracker({ data, series }: Props) {
   if (!data.length) {
     return (
       <div className="rounded-2xl p-4 text-center" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
@@ -51,13 +44,13 @@ export default function CalisthenicsTracker({ data }: Props) {
             labelStyle={{ color: 'var(--text-primary)' }}
           />
           <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 10 }} />
-          {LINES.map(({ key, label, color }) => (
+          {series.map(({ key, label }, index) => (
             <Line
               key={key}
               type="monotone"
               dataKey={key}
               name={label}
-              stroke={color}
+              stroke={LINE_COLORS[index % LINE_COLORS.length]}
               strokeWidth={1.5}
               dot={false}
               connectNulls

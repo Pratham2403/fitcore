@@ -1,51 +1,41 @@
 'use client'
 
-import type { DayType } from '@/types'
+import type { WeeklyProgram } from '@/types'
+import { DAY_NAMES, DAYS_OF_WEEK } from '@/components/program/programLabels'
 
-const DAYS: { dayType: DayType; label: string; short: string }[] = [
-  { dayType: 'push_a', label: 'Push A', short: 'Mon' },
-  { dayType: 'pull_a', label: 'Pull A', short: 'Tue' },
-  { dayType: 'legs_a', label: 'Legs A', short: 'Wed' },
-  { dayType: 'push_b', label: 'Push B', short: 'Thu' },
-  { dayType: 'pull_b', label: 'Pull B', short: 'Fri' },
-  { dayType: 'legs_b', label: 'Legs B', short: 'Sat' },
-  { dayType: 'recovery', label: 'Recovery', short: 'Sun' },
-]
-
-const DAY_COLORS: Record<DayType, string> = {
-  push_a: '#3B82F6',
-  push_b: '#3B82F6',
-  pull_a: '#10B981',
-  pull_b: '#10B981',
-  legs_a: '#F59E0B',
-  legs_b: '#F59E0B',
-  recovery: '#8B5CF6',
+interface DaySelectorProps {
+  program: WeeklyProgram
+  selectedWorkoutId: string | null
+  onChange: (workoutId: string) => void
 }
 
-interface Props {
-  selected: DayType
-  onChange: (dayType: DayType) => void
-}
+const SHORT_DAY_LENGTH = 3
 
-export default function DaySelector({ selected, onChange }: Props) {
+/** Horizontal picker for training a workout other than today's; shows which days each is scheduled. */
+export default function DaySelector({ program, selectedWorkoutId, onChange }: DaySelectorProps) {
+  function scheduledDaysLabel(workoutId: string): string {
+    const days = DAYS_OF_WEEK.filter(day => program.schedule[day]?.id === workoutId)
+    return days.length ? days.map(day => DAY_NAMES[day].slice(0, SHORT_DAY_LENGTH)).join(' · ') : 'Unscheduled'
+  }
+
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-      {DAYS.map(d => {
-        const active = d.dayType === selected
-        const color = DAY_COLORS[d.dayType]
+    <div role="group" aria-label="Choose a workout" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+      {program.workouts.map(workout => {
+        const isSelected = workout.id === selectedWorkoutId
         return (
           <button
-            key={d.dayType}
-            onClick={() => onChange(d.dayType)}
-            className="flex-shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition-colors"
-            style={{
-              background: active ? color : 'var(--bg-elevated)',
-              color: active ? '#fff' : 'var(--text-secondary)',
-              border: `1px solid ${active ? 'transparent' : 'var(--border)'}`,
-            }}
+            key={workout.id}
+            type="button"
+            aria-pressed={isSelected}
+            onClick={() => onChange(workout.id)}
+            className={`flex min-h-12 shrink-0 flex-col justify-center rounded-[var(--radius-md)] border px-4 text-left transition-colors duration-150 ${
+              isSelected
+                ? 'border-[var(--accent-emerald)] bg-[var(--accent-emerald-soft)] text-[var(--accent-emerald-strong)]'
+                : 'border-[var(--border)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-[var(--text-tertiary)]'
+            }`}
           >
-            <span className="block text-[10px] opacity-70">{d.short}</span>
-            {d.label}
+            <span className="text-[11px] opacity-70">{scheduledDaysLabel(workout.id)}</span>
+            <span className="text-sm font-semibold">{workout.name}</span>
           </button>
         )
       })}

@@ -5,7 +5,8 @@
 // Back: back (lats/rhomboids), triceps, hamstrings, glutes, calves
 
 interface Props {
-  trainedDayTypes: string[]  // day_types completed this week
+  /** Sessions this week that trained each muscle group. */
+  sessionsPerMuscle: Partial<Record<string, number>>
 }
 
 function getOpacity(count: number): number {
@@ -15,25 +16,9 @@ function getOpacity(count: number): number {
   return 1.0
 }
 
-const MUSCLE_DAY_MAP: Record<string, string[]> = {
-  chest: ['push_a', 'push_b'],
-  shoulders: ['push_a', 'push_b'],
-  triceps: ['push_a', 'push_b'],
-  back: ['pull_a', 'pull_b'],
-  biceps: ['pull_a', 'pull_b'],
-  forearms: ['pull_a', 'pull_b'],
-  quads: ['legs_a', 'legs_b'],
-  hamstrings: ['legs_a', 'legs_b'],
-  glutes: ['legs_a', 'legs_b'],
-  calves: ['legs_a', 'legs_b'],
-  core: ['legs_a', 'legs_b'],
-}
-
-export default function MuscleHeatmap({ trainedDayTypes }: Props) {
+export default function MuscleHeatmap({ sessionsPerMuscle }: Props) {
   function muscleOpacity(muscle: string): number {
-    const days = MUSCLE_DAY_MAP[muscle] ?? []
-    const count = trainedDayTypes.filter(d => days.includes(d)).length
-    return getOpacity(count)
+    return getOpacity(sessionsPerMuscle[muscle] ?? 0)
   }
 
   const E = '#10B981'  // emerald

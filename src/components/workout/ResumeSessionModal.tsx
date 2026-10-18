@@ -1,6 +1,5 @@
 'use client'
 
-import { getDayLabel } from '@/lib/utils'
 import type { SessionDraft } from '@/types'
 
 interface Props {
@@ -31,7 +30,7 @@ export default function ResumeSessionModal({ draft, onContinue, onDiscard }: Pro
             Unfinished session
           </h2>
           <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-            {getDayLabel(draft.dayType)} · started {ageLabel}
+            {draft.workoutName} · started {ageLabel}
           </p>
         </div>
 

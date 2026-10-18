@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 
 interface UseTimerReturn {
   remaining: number
-  elapsed: number
   isRunning: boolean
   start: () => void
   pause: () => void
@@ -96,7 +95,6 @@ export function useTimer(initialSecs: number, onComplete?: () => void): UseTimer
 
   return {
     remaining,
-    elapsed: duration - remaining,
     isRunning,
     start,
     pause,

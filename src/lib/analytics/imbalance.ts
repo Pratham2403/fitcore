@@ -7,10 +7,10 @@ export interface ImbalanceResult {
   dominantSide: 'left' | 'right'
 }
 
-type SetEntry = { exercise_name: string; side: string | null; weight_kg: number | null }
+type SetEntry = { exercise_id: string | null; exercise_name: string; side: string | null; weight_kg: number | null }
 
 /**
- * Detects left/right strength imbalances in unilateral exercises.
+ * Detects left/right strength imbalances in unilateral exercises, grouping by catalog id (name for legacy sets).
  * @param minSetsPerSide - minimum logged sets per side before flagging (default 3)
  * @param thresholdPct - minimum asymmetry percentage to flag (default 10)
  */
@@ -19,20 +19,21 @@ export function detectImbalances(
   minSetsPerSide = 3,
   thresholdPct = 10,
 ): ImbalanceResult[] {
-  const byExercise = new Map<string, { left: number[]; right: number[] }>()
+  const byExercise = new Map<string, { exerciseName: string; left: number[]; right: number[] }>()
 
   for (const set of sets) {
     if (!set.side || set.weight_kg === null || set.weight_kg === 0) continue
-    if (!byExercise.has(set.exercise_name)) byExercise.set(set.exercise_name, { left: [], right: [] })
-    const ex = byExercise.get(set.exercise_name)!
-    if (set.side === 'left') ex.left.push(set.weight_kg)
-    else ex.right.push(set.weight_kg)
+    const key = set.exercise_id ?? set.exercise_name
+    const entry = byExercise.get(key) ?? { exerciseName: set.exercise_name, left: [], right: [] }
+    if (set.side === 'left') entry.left.push(set.weight_kg)
+    else entry.right.push(set.weight_kg)
+    byExercise.set(key, entry)
   }
 
   const results: ImbalanceResult[] = []
   const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length
 
-  Array.from(byExercise.entries()).forEach(([exerciseName, { left, right }]) => {
+  Array.from(byExercise.values()).forEach(({ exerciseName, left, right }) => {
     if (left.length < minSetsPerSide || right.length < minSetsPerSide) return
     const leftAvg = avg(left)
     const rightAvg = avg(right)

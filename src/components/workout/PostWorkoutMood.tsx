@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import Button from '@/components/ui/Button'
 
 interface Props {
-  onComplete: (workoutMood: 1 | 2 | 3, energyMood: 1 | 2 | 3) => void
+  onComplete: (workoutMood: 1 | 2 | 3, energyMood: 1 | 2 | 3) => Promise<void>
 }
 
 const WORKOUT_OPTIONS: { value: 1 | 2 | 3; emoji: string; label: string; sub: string }[] = [
@@ -21,6 +22,12 @@ const ENERGY_OPTIONS: { value: 1 | 2 | 3; emoji: string; label: string }[] = [
 export default function PostWorkoutMood({ onComplete }: Props) {
   const [workoutMood, setWorkoutMood] = useState<1 | 2 | 3>(2)
   const [energyMood, setEnergyMood] = useState<1 | 2 | 3>(2)
+  const [isSaving, setIsSaving] = useState(false)
+
+  function finish() {
+    setIsSaving(true)
+    onComplete(workoutMood, energyMood).finally(() => setIsSaving(false))
+  }
 
   return (
     <div className="rounded-2xl p-5 space-y-5"
@@ -80,13 +87,9 @@ export default function PostWorkoutMood({ onComplete }: Props) {
         </div>
       </div>
 
-      <button
-        onClick={() => onComplete(workoutMood, energyMood)}
-        className="w-full py-3 rounded-2xl text-sm font-semibold"
-        style={{ background: 'var(--accent-emerald)', color: '#fff' }}
-      >
+      <Button size="lg" isFullWidth isLoading={isSaving} loadingLabel="Saving session…" onClick={finish}>
         See summary →
-      </button>
+      </Button>
     </div>
   )
 }
