@@ -8,35 +8,11 @@ import AuthShell from '@/components/auth/AuthShell'
 import PasswordInput from '@/components/auth/PasswordInput'
 import Button from '@/components/ui/Button'
 import { Input } from '@/components/ui/Field'
-import { CheckIcon, MailIcon } from '@/components/ui/Icon'
+import PasswordRules, { MIN_PASSWORD_LENGTH, isPasswordAcceptable } from '@/components/auth/PasswordRules'
+import { MailIcon } from '@/components/ui/Icon'
+import { ONBOARDING_PATH, buildAuthConfirmUrl } from '@/lib/auth/links'
 
 const supabase = getSupabaseClient()
-
-const MIN_PASSWORD_LENGTH = 8
-const PASSWORD_RULES = [
-  { label: `At least ${MIN_PASSWORD_LENGTH} characters`, isMet: (password: string) => password.length >= MIN_PASSWORD_LENGTH },
-  { label: 'Contains a letter', isMet: (password: string) => /[a-zA-Z]/.test(password) },
-  { label: 'Contains a number', isMet: (password: string) => /\d/.test(password) },
-] as const
-
-const ONBOARDING_PATH = '/onboarding'
-
-function PasswordRules({ password }: { password: string }) {
-  return (
-    <ul className="mt-1 space-y-1">
-      {PASSWORD_RULES.map(rule => {
-        const isMet = rule.isMet(password)
-        return (
-          <li key={rule.label} className={`flex items-center gap-1.5 ${isMet ? 'text-[var(--accent-emerald)]' : ''}`}>
-            <CheckIcon size={14} className={isMet ? '' : 'opacity-30'} />
-            {rule.label}
-            <span className="sr-only">{isMet ? '(met)' : '(not met)'}</span>
-          </li>
-        )
-      })}
-    </ul>
-  )
-}
 
 export default function SignupPage() {
   const [email, setEmail] = useState('')
@@ -46,7 +22,7 @@ export default function SignupPage() {
   const [isAwaitingConfirmation, setIsAwaitingConfirmation] = useState(false)
   const router = useRouter()
 
-  const isPasswordValid = PASSWORD_RULES.every(rule => rule.isMet(password))
+  const isPasswordValid = isPasswordAcceptable(password)
 
   async function handleSignup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -57,7 +33,11 @@ export default function SignupPage() {
     setIsLoading(true)
     setError('')
 
-    const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: buildAuthConfirmUrl(window.location.origin, ONBOARDING_PATH) },
+    })
 
     if (signUpError) {
       setError(signUpError.message)
@@ -87,7 +67,7 @@ export default function SignupPage() {
       >
         <div role="status" className="flex items-start gap-3 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 text-sm text-[var(--text-secondary)]">
           <MailIcon size={20} className="mt-0.5 shrink-0 text-[var(--accent-emerald)]" />
-          Open the link to activate your account, then sign in. We&apos;ll walk you through setting up your constraints.
+          Open the link to activate your account. It signs you in and walks you through setting up your constraints.
         </div>
       </AuthShell>
     )

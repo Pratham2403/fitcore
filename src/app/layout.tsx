@@ -4,6 +4,7 @@ import localFont from 'next/font/local'
 import { Analytics } from '@vercel/analytics/next'
 import MotionProvider from '@/components/ui/MotionProvider'
 import { ToastProvider } from '@/components/ui/Toast'
+import { resolveSiteUrl } from '@/lib/siteUrl'
 import './globals.css'
 
 const dmSans = DM_Sans({
@@ -22,13 +23,12 @@ const geistMono = localFont({
 const SITE_NAME = 'FitCore'
 const SITE_DESCRIPTION =
   'Constraint-aware strength training. Build the physique you want without wrecking the joints you have.'
-const DEFAULT_SITE_URL = 'http://localhost:3000'
 const THEME_COLOR = '#0F0F0F'
 /** Vercel serves the analytics script only on its own deployments; elsewhere the request 404s with an HTML page. */
 const IS_VERCEL_DEPLOYMENT = process.env.VERCEL === '1'
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? DEFAULT_SITE_URL),
+  metadataBase: resolveSiteUrl(process.env),
   title: { default: SITE_NAME, template: `%s · ${SITE_NAME}` },
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,

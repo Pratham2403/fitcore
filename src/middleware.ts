@@ -4,7 +4,9 @@ import type { Database } from '@/types/database'
 
 const AUTH_ROUTES = ['/login', '/signup', '/welcome']
 // /api requires a signed-in session; /v1/api serves Bearer-token callers and every route there must guard itself (withAdmin).
-const PUBLIC_PREFIXES = ['/legal', '/coach', '/opengraph-image', '/api/health', '/v1/api']
+// /auth/confirm and /forgot-password stay reachable when signed in: an emailed link may target a browser that already has a session.
+// /reset-password is deliberately absent: it needs the (recovery) session, so signed-out visitors go to /login.
+const PUBLIC_PREFIXES = ['/legal', '/coach', '/opengraph-image', '/api/health', '/v1/api', '/auth/confirm', '/forgot-password']
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
